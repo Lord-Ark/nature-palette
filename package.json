@@ -1,0 +1,14 @@
+{
+  "name": "sewebapp",
+  "version": "1.0.0",
+  "description": "Simple web application",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js"
+  },
+  "author": "Hamza",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
