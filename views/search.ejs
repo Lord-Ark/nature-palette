@@ -1,0 +1,649 @@
+<% include ../views/header %>
+  <script
+    src="https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js"></script>
+
+  <% if (typeof error !=='undefined' && error !=null){ %>
+    <div class="col-ms-12 text-center">
+      <div class="alert alert-danger" role="alert">
+        <%= error %>
+      </div>
+    </div>
+    <% } else {%>
+      <div class="col-ms-12 text-center">
+        <img id="loadingGif" class="hidden" src="/images/loading.gif">
+        <div id="searchPageAlert" class="alert hidden" role="alert">
+        </div>
+      </div>
+      <% } %>
+
+        <!-- Map Style -->
+        <style>
+          #map {
+            height: 400px;
+            width: 80%;
+            margin: auto;
+          }
+
+          .map-frame {
+            position: relative;
+          }
+
+          #floating-panel {
+            position: absolute;
+            bottom: 10px;
+            left: 15%;
+            z-index: 10;
+            padding: 5px;
+            text-align: center;
+            font-family: "Roboto", "sans-serif";
+            line-height: 30px;
+            padding-left: 10px;
+          }
+        </style>
+        <!-- Map Style over -->
+        <!-- -->
+
+        <style type="text/css">
+          .searchForm fieldset .serach-query-row {
+            width: 100%;
+          }
+
+          @media only screen and (min-width: 769px) {
+            .searchForm fieldset .serach-query-row {
+              white-space: nowrap;
+            }
+          }
+        </style>
+
+        <!-- MultiStep Form -->
+        <div class="row">
+          <div class="col-md-12 ">
+            <form ref='searchForm' class="searchForm" id='uploadForm' action="/search" method="post">
+              <!-- progressbar 
+      <ul id="progressbar">
+        <li class="active">Query</li>
+        <li>Refine by Geo-Region</li>
+        <li>Refine by Color Space</li>
+      </ul>
+    -->
+              <fieldset>
+                <h3 class="mb-3">Search Query </h3>
+                <% if (typeof input !=='undefined' && input !=null && input.mappoly !=='undefined' &&
+                  input.mappoly!==null){ %>
+                  <input type="hidden" id='mappoly' name='mappoly' value="<%= input.mappoly %>">
+
+                  <% } else {%>
+                    <input type="hidden" id='mappoly' name='mappoly'>
+
+                    <% } %>
+                      <!-- <input type="hidden" value="<%= searchResult%>""> -->
+                      <hr>
+                      <!--
+          <div class="col-md-3">
+            <input type="text" class="form-control" name="institutioncode" id="institutioncode" placeholder="Institution code" value="">
+          </div>
+          <div class="col-md-3">
+            <input type="text" class="form-control" name="collectioncode" id="collectioncode" placeholder="Collection code" value="">
+          </div>
+          <div class="col-md-3">
+            <input type="text" class="form-control" name="cataloguenumber" id="cataloguenumber" placeholder="Catalogue number" value="">
+          </div>
+          <div class="col-md-3">
+            <input type="text" class="form-control" name="class" id="class" placeholder="Class" value="">
+          </div>
+          <div class="col-md-3">
+            <input type="text" class="form-control" name="order" id="order" placeholder="Order" value="">
+          </div>
+          <div class="col-md-3">
+            <input type="text" class="form-control" name="family" id="family" placeholder="Family" value="">
+          </div>
+          <div class="col-md-3">
+            <input type="text" class="form-control" name="genus" id="genus" placeholder="Genus" value="">
+          </div>
+          <div class="col-md-3">
+            <input type="text" class="form-control" name="specificepithet" id="specificepithet" placeholder="Specific epithet" value="">
+          </div>
+          <div class="col-md-3">
+            <input type="text" class="form-control" name="infraSpecificepithet" id="infraSpecificepithet" placeholder="Intraspecific Epithet" value="">
+          </div>
+          <div class="col-md-3">
+            <input type="text" class="form-control" name="sex" id="sex" placeholder="Sex" value="">
+          </div>
+          <div class="col-md-3">
+            <input type="text" class="form-control" name="lifestage" id="lifestage" placeholder="Life stage" value="">
+          </div>
+          <div class="col-md-3">
+            <input type="text" class="form-control" name="country" id="country" placeholder="Country" value="">
+          </div>
+          <div class="col-md-3">
+            <input type="text" class="form-control" name="patch" id="patch" placeholder="Patch" value="">
+          </div>
+          -->
+                      <% if (typeof searchTerms !=='undefined' && searchTerms !=null && input !==null){ %>
+                        <% for (var i=0; i < searchTerms.length; i++) { %>
+                          <div class="col-md-3">
+                            <!-- <label for="<%= searchTerms[i].Name %>"><%= searchTerms[i].Placeholder %></label> -->
+                            <input type="text" class="form-control" name="<%= searchTerms[i].Name %>"
+                              id="<%= searchTerms[i].Name %>" placeholder="<%= searchTerms[i].Placeholder %>"
+                              value="<%= input[searchTerms[i].Name] %>" style="font-weight:bold;">
+                          </div>
+                          <% } %>
+                            <% } else { %>
+                              <% for (var i=0; i < searchTerms.length; i++) { %>
+                                <div class="col-md-3">
+                                  <!-- <label for="<%= searchTerms[i].Name %>"><%= searchTerms[i].Placeholder %></label> -->
+                                  <input type="text" class="form-control" name="<%= searchTerms[i].Name %>"
+                                    id="<%= searchTerms[i].Name %>" placeholder="<%= searchTerms[i].Placeholder %>"
+                                    value="" style="font-weight:bold;">
+                                </div>
+                                <% } %>
+                                  <% } %>
+                                    <div class="col-md-3">
+                                      <button style="display: block; margin: auto;" type="button" id=""
+                                        class="btn btn-primary showMapBtn" onclick="showhidemap()"
+                                        value="Search!">Map</button>
+                                    </div>
+                                    <div class="col-md-3">
+                                      <button style="display: block; margin: auto;" type="submit" id=""
+                                        class="btn btn-primary" value="Search!">Search</button>
+                                    </div>
+
+
+              </fieldset>
+            </form>
+          </div>
+        </div>
+        <br>
+        <div class="col-md-12 map-container d-none">
+          <div class="map-frame">
+            <% if (typeof searchResult !=='undefined' && searchResult !=null){ %>
+              <div class="result-coordinate-div alert alert-info">
+                <p id="resultCoordinate" style="line-height: 40px;text-align: center;"></p>
+              </div>
+              <%}%>
+                <div id="floating-panel">
+                  <input id="clear-map" type="button" value="Clear Map" />
+                </div>
+                <div id="map"></div>
+          </div>
+        </div>
+        <!-- Search Form -->
+        <div class="row">
+          <div class="col-md-12 ">
+            <% if (typeof searchResult !=='undefined' && searchResult !=null){ %>
+              <div class="col-ms-12 text-center">
+                <div class="alert alert-success" role="alert" style="line-height: 40px;">
+                  Displaying <%= searchResult.length %> Unique Results
+                    <% if (searchResult.length> 0 ){ %>
+                      (Found <%= searchResult[0].TotalSearchResultCount %> in Total)!
+                        <!--<button type="button" class="btn btn-primary" style="position: absolute; right: 10px;" onclick="downloadAllResults()">Download All</button>-->
+                        <form ref='downloadForm' class="downloadForm" id='downloadForm'
+                          action="/search/downloadSearchResult" method="post">
+                          <fieldset>
+                            <input type="text" class="form-control hidden" name="SearchResultId" id="SearchResultId"
+                              placeholder="SearchResultId" value="<%= searchResult[0].SearchResultId %>">
+                            <button type="submit" id="" class="btn btn-primary" value="Download All!">Download</button>
+                          </fieldset>
+                        </form>
+                        <% } %>
+                </div>
+              </div>
+              <% } %>
+          </div>
+        </div>
+        <% if(searchResult !==null){%>
+          <div class="table-responsive" style="background: white;">
+            <table class="table table-hover text-center">
+              <thead class="thead-light">
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">genus</th>
+                  <th scope="col">specificEpithet</th>
+                  <!-- <th scope="col">Infraspecific Epithet</th> -->
+                  <th scope="col">sex</th>
+                  <th scope="col">lifestage</th>
+                  <th scope="col">Patch</th>
+                  <th scope="col">catalogueNumber</th>
+                  <th scope="col">Count</th>
+                  <!-- <th scope="col">url</th> -->
+                </tr>
+              </thead>
+              <tbody class="search-result-set">
+                <% if(searchResult !==null){ %>
+                  <% for (var i=0; i < searchResult.length; i++) { %>
+                    <tr class="search-data-row">
+                      <th scope="row">
+                        <%= i+1 %>
+                      </th>
+                      <td>
+                        <%= searchResult[i].genus %>
+                      </td>
+                      <td>
+                        <%= searchResult[i].specificepithet %>
+                      </td>
+                      <!-- <td><%= searchResult[i].infraspecificepithet %></td> -->
+                      <td>
+                        <%= searchResult[i].sex %>
+                      </td>
+                      <td>
+                        <%= searchResult[i].lifestage %>
+                      </td>
+                      <td>
+                        <%= searchResult[i].patch %>
+                      </td>
+                      <td>
+                        <%= searchResult[i].cataloguenumber %>
+                      </td>
+                      <td>
+                        <%= searchResult[i].count %>
+                      </td>
+                      <!-- <td><a class="btn" href="<%= searchResult[i].url %>">Download</a></td> -->
+                      <td class="hidden metaID">
+                        <%= searchResult[i]._id %>
+                      </td>
+                      <td class="hidden dec-lat">
+                        <%= searchResult[i].latitude %>
+                      </td>
+                      <td class="hidden dec-long">
+                        <%= searchResult[i].longitude %>
+                      </td>
+                    </tr>
+                    <% } %>
+                      <% } %>
+              </tbody>
+            </table>
+          </div>
+          <% } %>
+            <% include ../views/footer %>
+
+              <script type="text/javascript">
+                function downloadAllResults() {
+                  var requestedData = $(".metaID").map(function () {
+                    return $(this).context.textContent;
+                  }).get();
+                  $.post("/search/download", { ids: JSON.stringify(requestedData) }, function (retData) {
+                    console.log(retData);
+                    download("researchData.zip", retData);
+
+                    $("body").append("<iframe src='" + retData.url + "' style='display: none;' ></iframe>");
+                  }
+                  );
+
+                  function download(filename, data) {
+                    var element = document.createElement('a');
+                    element.setAttribute('href', 'data:text/plain;base64,' + data);
+                    element.setAttribute('download', filename);
+
+                    element.style.display = 'none';
+                    document.body.appendChild(element);
+
+                    element.click();
+
+                    document.body.removeChild(element);
+                  }
+                }
+              </script>
+              <script
+                src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&callback=initMap&&libraries=drawing&v=weekly&channel=2"
+                async></script>
+              <script>
+                var polysArray = [];
+                var globalmap;
+                var polydrawn;
+                var infowindow;
+                var searchResult = "<%= searchResult %>"
+                var rectangle;
+                function showhidemap() {  // Hide show function
+                  if (document.querySelector('.map-container').classList.contains('d-none')) {
+                    document.querySelector('.map-container').classList.remove('d-none');
+                    resultWithCoordinate();
+                  }
+                  else {
+                    document.querySelector('.map-container').classList.add('d-none');
+                  }
+                  // checkonmap()
+                }
+
+
+                // initialize and load map when open the map page
+                function initMap() {
+                  const chicago = new google.maps.LatLng(41.85, -87.65);
+
+                  //import { MarkerClusterer } from "@googlemaps/markerclusterer";
+
+                  const map = new google.maps.Map(document.getElementById("map"), {
+                    center: chicago,
+                    zoom: 3,
+                  });
+                  globalmap = map;
+
+
+                  const drawingManager = new google.maps.drawing.DrawingManager({
+                    drawingControl: true,
+                    drawingControlOptions: {
+                      position: google.maps.ControlPosition.TOP_CENTER,
+                      drawingModes: [
+                        google.maps.drawing.OverlayType.POLYGON,
+                        google.maps.drawing.OverlayType.RECTANGLE,
+                      ]
+                    },
+                    rectangleOptions: {
+                      editable: true,
+                      draggable: true
+                    }
+                  });
+
+                  // When overlay completed, it will be saved to polysArray.
+                  google.maps.event.addListener(drawingManager, 'overlaycomplete', function (event) {
+                    drawingManager.setDrawingMode(null);
+
+                    // rectangle = event.overlay;
+
+                    polysArray.push(event.overlay)
+                    // polydrawn = event.overlay
+                    if (event.type == 'rectangle') {
+                      var northeast = event.overlay.getBounds().getNorthEast();
+                      var southwest = event.overlay.getBounds().getSouthWest();
+
+                      var point1 = { 'lat': northeast.lat(), 'lng': northeast.lng() }
+                      var point2 = { 'lat': southwest.lat(), 'lng': southwest.lng() }
+
+                      console.log(point1, '----', point2)
+                    }
+
+                    else if (event.type == 'polygon') {
+                      var coordinatesArray = event.overlay.getPath().getArray();
+                      for (let i = 0; i < coordinatesArray.length; i++) {
+                        const element = coordinatesArray[i];
+                        console.log(element.lat(), '----', element.lng())
+                      }
+                      // localStorage.setItem('polygondrawn', JSON.stringify({ cordinate: coordinatesArray }))
+                    }
+
+
+                    cookiString = point1.lat + '_' + point1.lng + '_' + point2.lat + '_' + point2.lng
+                    saveMapState(cookiString)
+                    // console.log(coordinatesArray)
+                    // globalmap = event
+                    // polysArray.push(poly)
+                    // document.getElementById('mappoly').value = polysArray
+
+
+                    event.overlay.addListener("bounds_changed", function () {
+
+                      // alert('bounds changed!');
+                      if (event.type == 'rectangle') {
+                        var northeast = event.overlay.getBounds().getNorthEast();
+                        var southwest = event.overlay.getBounds().getSouthWest();
+
+                        var point1 = { 'lat': northeast.lat(), 'lng': northeast.lng() }
+                        var point2 = { 'lat': southwest.lat(), 'lng': southwest.lng() }
+
+                        console.log(point1, '----', point2)
+
+                        cookiString = point1.lat + '_' + point1.lng + '_' + point2.lat + '_' + point2.lng
+                        saveMapState(cookiString)
+                      }
+                    });
+
+                  });
+
+
+                  // setup drawingManager tool 
+                  drawingManager.setMap(globalmap);
+                  // if (JSON.parse(localStorage.getItem('polygondrawn')) != undefined) {
+                  //   console.log(JSON.parse(localStorage.getItem('polygondrawn')))
+                  // }
+                  loadMapState();
+
+
+                  if (rectangle != null) {
+                    rectangle.addListener("bounds_changed", function () {
+
+                      console.log('bound changed!');
+
+                      const ne = rectangle.getBounds().getNorthEast();
+                      const sw = rectangle.getBounds().getSouthWest();
+
+                      // alert(rectangle.getBounds().north);
+
+                      // alert(ne.lat());
+
+                      var mapZoom = globalmap.getZoom();
+                      var mapCenter = globalmap.getCenter();
+                      var mapLat = mapCenter.lat();
+                      var mapLng = mapCenter.lng();
+
+                      var point1 = { 'lat': ne.lat(), 'lng': ne.lng() }
+                      var point2 = { 'lat': sw.lat(), 'lng': sw.lng() }
+
+                      var extra = point1.lat + '_' + point1.lng + '_' + point2.lat + '_' + point2.lng;
+                      var cookiestring = mapLat + "_" + mapLng + "_" + mapZoom + "_" + extra;
+
+                      setCookie("myMapCookie", cookiestring, 30);
+                    });
+                  }
+
+                }
+
+                // window.onunload = function () {
+                //   alert('1');
+                // }
+
+                document.getElementById("clear-map").addEventListener("click", function () {
+                  if (polysArray.length > 0) {
+                    polysArray.forEach(element => {
+                      element.setMap(null);
+                    });
+                  }
+                  // localStorage.removeItem('polygondrawn') 
+                  clearCookie("myMapCookie");
+                  rectangle.setMap(null);
+                });
+
+
+                function saveMapState(extra) {
+                  // const map = new google.maps.Map(document.getElementById("map"));
+                  var mapZoom = globalmap.getZoom();
+                  var mapCenter = globalmap.getCenter();
+                  var mapLat = mapCenter.lat();
+                  var mapLng = mapCenter.lng();
+                  var cookiestring = mapLat + "_" + mapLng + "_" + mapZoom + "_" + extra;
+                  setCookie("myMapCookie", cookiestring, 30);
+                }
+
+                function loadMapState() {
+                  var gotCookieString = getCookie("myMapCookie");
+                  var splitStr = gotCookieString.split("_");
+                  var savedMapLat = parseFloat(splitStr[0]);
+                  var savedMapLng = parseFloat(splitStr[1]);
+                  var savedMapZoom = parseFloat(splitStr[2]);
+                  const northeast = {}
+                  const southwest = {}
+                  northeast.lat = parseFloat(splitStr[3]);
+                  northeast.lng = parseFloat(splitStr[4]);
+                  southwest.lat = parseFloat(splitStr[5]);
+                  southwest.lng = parseFloat(splitStr[6]);
+                  if ((!isNaN(savedMapLat)) && (!isNaN(savedMapLng)) && (!isNaN(savedMapZoom)) &&
+                    (!isNaN(northeast.lat)) && (!isNaN(northeast.lng)) && (!isNaN(southwest.lat)) && (!isNaN(southwest.lng))) {
+
+                    globalmap.setCenter(new google.maps.LatLng(savedMapLat, savedMapLng));
+                    globalmap.setZoom(savedMapZoom);
+
+                    rectangle = new google.maps.Rectangle({
+                      editable: true,
+                      draggable: true
+                    })
+                    rectangle.setBounds({
+                      north: northeast.lat,
+                      south: southwest.lat,
+                      west: southwest.lng,
+                      east: northeast.lng
+                    })
+                    rectangle.setMap(globalmap)
+                    // var NE = new google.maps.LatLng(northeast.lat, northeast.lng);
+                    // var SW = new google.maps.LatLng(southwest.lat, southwest.lng);
+                    // var newRect = new google.maps.LatLngBounds(SW, NE);
+                    // rectangle.setBounds(newRect);
+                  }
+                }
+
+                function setCookie(c_name, value, exdays) {
+                  var exdate = new Date();
+                  exdate.setDate(exdate.getDate() + exdays);
+                  var c_value = escape(value) + ((exdays = null) ? "" : "; expires = " + exdate.toUTCString());
+                  document.cookie = c_name + "=" + c_value;
+                }
+
+                function getCookie(c_name) {
+                  var i, x, y, ARRcookies = document.cookie.split(";");
+                  for (i = 0; i < ARRcookies.length; i++) {
+                    x = ARRcookies[i].substr(0, ARRcookies[i].indexOf("="));
+                    y = ARRcookies[i].substr(ARRcookies[i].indexOf("=") + 1);
+                    x = x.replace(/^\s+|\s+$/g, "");
+                    if (x == c_name) {
+                      return unescape(y);
+                    }
+                  }
+                  return "";
+                }
+
+                function clearCookie(c_name) {
+                  setCookie(c_name, "", -1);
+                }
+
+                function checkonmap() {
+                  if (searchResult !== 'undefined' && searchResult != null && searchResult != '') {
+                    // console.log(searchResult)
+                    var poly1 = JSON.parse(localStorage.getItem('polygondrawn'));
+                    var poly
+                    if (poly1 != undefined)
+                      poly = new google.maps.Polygon({ paths: poly1.cordinate }, "#000000", 1, 1, "#fff000", 0.3);
+
+                    console.log(document.getElementById('mappoly').value)
+                    for (let i = 0; i < searchResult.length; i++) {
+                      const element = searchResult[i];
+                      // console.log(element.lat,'-----',element.long)
+                    }
+                    alert('there is search')
+                    console.log('polyarray -------', polysArray)
+                  }
+                  else {
+                    alert('no search found')
+                  }
+                  var poly1 = JSON.parse(localStorage.getItem('polygondrawn'));
+                  var poly
+                  if (poly1 != undefined) {
+                    poly = new google.maps.Polygon({
+                      paths: poly1.cordinate, strokeColor: "#FF0000",
+                      strokeOpacity: 0.8,
+                      strokeWeight: 2,
+                      fillColor: "#FF0000",
+                      fillOpacity: 0.35,
+                    });
+                    poly.setMap(globalmap)
+                    polydrawn = poly
+                  }
+                  // var polygon = new google.maps.Polygon([], "#000000", 1, 1, "#336699", 0.3);
+                  // var isWithinPolygon = polygon.containsLatLng(40, -90);
+                }
+
+                function resultWithCoordinate() {
+                  var count = 0;
+                  var sumResult = 0;
+                  var countNaN = 0;
+                  const myLatLng1 = { lat: -25.363, lng: 131.044 };
+                  const myLatLng2 = { lat: -25.363, lng: 134.044 };
+                  const myLatLng3 = { lat: -25.363, lng: 136.044 };
+                  const myLatLng4 = { lat: -33.727111, lng: 150.371124 };
+                  const myLatLng5 = { lat: -33.718234, lng: 150.363181 };
+                  const myLatLng6 = { lat: -24.718234, lng: 150.363181 };
+                  const myLatLng7 = { lat: -23.718234, lng: 150.363181 };
+                  const myLatLng8 = { lat: -22.718234, lng: 150.363181 };
+                  const myLatLng9 = { lat: -21.718234, lng: 150.363181 };
+                  const myLatLng10 = { lat: -20.718234, lng: 150.363181 };
+                  const searchRows = document.querySelectorAll('.search-result-set .search-data-row')
+                  searchRows.forEach(term => {
+                    var lat1 = term.querySelector('.dec-lat').innerHTML;
+                    var long1 = term.querySelector('.dec-long').innerHTML;
+                    var latFloat = parseFloat(lat1);
+                    var longFloat = parseFloat(long1);
+
+                    // console.log(latFloat);
+
+
+                    if (isNaN(latFloat) || isNaN(longFloat)) {
+                      console.log("Has NaN");
+                      countNaN++;
+                    } else {
+
+                      count++;
+                    }
+
+                    sumResult++;
+
+                    //////////////Find decimal lattitude longitude
+                  })
+
+                  var mark1 = new google.maps.Marker({
+                    position: myLatLng1,
+                    globalmap
+                  });
+                  var mark2 = new google.maps.Marker({
+                    position: myLatLng2,
+                    globalmap
+                  });
+                  var mark3 = new google.maps.Marker({
+                    position: myLatLng3,
+                    globalmap
+                  });
+                  var mark4 = new google.maps.Marker({
+                    position: myLatLng4,
+                    globalmap
+                  });
+                  var mark5 = new google.maps.Marker({
+                    position: myLatLng5,
+                    globalmap
+                  });
+                  var mark6 = new google.maps.Marker({
+                    position: myLatLng5,
+                    globalmap
+                  });
+                  var mark7 = new google.maps.Marker({
+                    position: myLatLng5,
+                    globalmap
+                  });
+                  var mark8 = new google.maps.Marker({
+                    position: myLatLng5,
+                    globalmap
+                  });
+                  var mark9 = new google.maps.Marker({
+                    position: myLatLng5,
+                    globalmap
+                  });
+                  var mark10 = new google.maps.Marker({
+                    position: myLatLng5,
+                    globalmap
+                  });
+
+                  // create an array of all your markers
+                  const markers = [mark1, mark2, mark3, mark4, mark5, mark6, mark7, mark8, mark9, mark10];
+
+                  const clusterOptions = {
+
+                    imagePath: "https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m",
+                    gridSize: 30,
+                    zoomOnClick: false,
+                    maxZoom: 10,
+                  };
+
+                  // Enable marker clustering for this map and these markers
+                  const markerClusterer = new MarkerClusterer(globalmap, markers, clusterOptions);
+                  //new MarkerClusterer({ markers, map });
+                  infowindow = new google.maps.InfoWindow({
+                    content: " "
+                  })
+                  //  console.log(count);
+                  document.getElementById('resultCoordinate').innerHTML = 'Found ' + count + ' records and' + ' with ' + countNaN + ' no lattitude or longtitude results' + ' (' + sumResult + ' records in total !!)'
+                }
+              </script>

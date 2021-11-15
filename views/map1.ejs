@@ -1,0 +1,168 @@
+<style>
+    #map {
+        height: 400px;
+        width: 80%;
+        margin: auto;
+    }
+
+    .map-frame {
+        position: relative;
+        text-align:center;
+    }
+
+    #floating-panel {
+        position: absolute;
+        top: 10px;
+        left: 25%;
+        z-index: 10;
+        padding: 5px;
+        text-align: center;
+        font-family: "Roboto", "sans-serif";
+        line-height: 30px;
+        padding-left: 10px;
+    }
+</style>
+
+
+<div class="map-frame">
+    <div>
+        <p id="resultWithCoordinate">
+        </p>
+        searchResult.lon
+        Displaying <%= searchResult.length %> Unique Results
+        
+    </div>
+
+    <div id="floating-panel">
+        <input id="show-markers" type="button" value="Clear Map" />
+    </div>
+    <div id="map"></div>
+</div>
+
+
+<!-- Async script executes immediately and must be after any DOM elements used in callback. -->
+<script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&callback=initMap&&libraries=drawing&v=weekly&channel=2"
+    async></script>
+<script>
+    var polysArray = [];
+    var globalmap;
+    function initMap() {
+        const chicago = new google.maps.LatLng(41.85, -87.65);
+        const map = new google.maps.Map(document.getElementById("map"), {
+            center: chicago,
+            zoom: 3,
+        });
+        // const coordInfoWindow = new google.maps.InfoWindow();
+
+        // coordInfoWindow.setContent(createInfoWindowContent(chicago, map.getZoom()));
+        // coordInfoWindow.setPosition(chicago);
+        // coordInfoWindow.open(map);
+        // map.addListener("zoom_changed", () => {
+        //     coordInfoWindow.setContent(createInfoWindowContent(chicago, map.getZoom()));
+        //     coordInfoWindow.open(map);
+        // });
+        const drawingManager = new google.maps.drawing.DrawingManager({
+            drawingMode: google.maps.drawing.OverlayType.MARKER,
+            drawingControl: true,
+            drawingControlOptions: {
+                position: google.maps.ControlPosition.TOP_CENTER,
+                drawingModes: [
+                    google.maps.drawing.OverlayType.CIRCLE,
+                    google.maps.drawing.OverlayType.POLYGON,
+                    google.maps.drawing.OverlayType.RECTANGLE,
+                ],
+            },
+            // markerOptions: {
+            //     icon: "https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png",
+            // },
+
+        });
+        document.getElementById("show-markers").addEventListener("click", function () {
+            // this.setMap(null)
+            // google.maps.setMap(null)
+            if (globalmap.overlay) {
+                globalmap.overlay.setMap(null);
+            }
+        });
+
+        google.maps.event.addListener(drawingManager, 'overlaycomplete', function (event) {
+            // if (event.type == 'circle') {
+            //     var radius = event.overlay.getRadius();
+            //     console.log(event.overlay)
+
+            //     // ale//rt(radius)
+            // }
+            // console.log(event)
+            var coordinatesArray = event.overlay.getPath().getArray();
+            for (let i = 0; i < coordinatesArray.length; i++) {
+                const element = coordinatesArray[i];
+                console.log(element.lat(), '----', element.lng())
+            }
+            // console.log(coordinatesArray)
+            globalmap = event
+            var poly= new google.maps.Polygon({ paths: event.overlay.getPath()});
+            polysArray.push(poly)
+            document.getElementById('mappoly').value = polysArray
+        });
+        drawingManager.setMap(map);
+        // globalmap = map
+        // checkonmap()
+    }
+
+    const TILE_SIZE = 256;
+
+    function clearmap() {
+        alert('hi')
+        // console.log(over1)
+
+        // console.log(google.maps.drawing)
+    }
+    function createInfoWindowContent(latLng, zoom) {
+        const scale = 1 << zoom;
+        const worldCoordinate = project(latLng);
+        const pixelCoordinate = new google.maps.Point(
+            Math.floor(worldCoordinate.x * scale),
+            Math.floor(worldCoordinate.y * scale)
+        );
+        const tileCoordinate = new google.maps.Point(
+            Math.floor((worldCoordinate.x * scale) / TILE_SIZE),
+            Math.floor((worldCoordinate.y * scale) / TILE_SIZE)
+        );
+        return [
+            "Chicago, IL",
+            "LatLng: " + latLng,
+            "Zoom level: " + zoom,
+            "World Coordinate: " + worldCoordinate,
+            "Pixel Coordinate: " + pixelCoordinate,
+            "Tile Coordinate: " + tileCoordinate,
+        ].join("<br>");
+    }
+
+    function resultWithCoordinate(){
+        let count = 0;
+        for (let i = 0; i<searchResult.length;i++){
+            searchResult[i].longitude != null;
+            searchResult[i].latitude != null;
+            count++;
+        } 
+        // searchResult
+        // SafeArray
+        // count = count+1
+
+        document.getElementById('resultWithCoordinate').innerHTML('found'+count+' records out of '+ searchResult.length+ 'reciords ')
+    }
+    // The mapping between latitude, longitude and pixels is defined by the web
+    // mercator projection.
+    function project(latLng) {
+        let siny = Math.sin((latLng.lat() * Math.PI) / 180);
+
+        // Truncating to 0.9999 effectively limits latitude to 89.189. This is
+        // about a third of a tile past the edge of the world tile.
+        siny = Math.min(Math.max(siny, -0.9999), 0.9999);
+        return new google.maps.Point(
+            TILE_SIZE * (0.5 + latLng.lng() / 360),
+            TILE_SIZE * (0.5 - Math.log((1 + siny) / (1 - siny)) / (4 * Math.PI))
+        );
+    }
+</script>

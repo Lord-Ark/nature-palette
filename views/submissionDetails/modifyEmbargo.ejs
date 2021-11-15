@@ -1,0 +1,72 @@
+<% include ../header %>
+
+
+<!-- <div class="container" style="width:70%; margin: auto"> -->
+<div class="container pt-3">
+
+    <div class="row justify-content-center align-items-centers">
+        <div class="col">
+            <h3 style="text-align: center; color: black;font-weight:bold;">Submission Modification!  </h3>
+            <hr>
+            <% if (typeof message !== 'undefined'){ %>
+                <div class="col-ms-12 text-center">
+                    <div class="alert alert-success" role="alert">
+                        <%= message %>
+                    </div>     
+                </div>
+            <% } else { %> 
+            <% if (typeof error !== 'undefined' && error != null){ %>
+                <div class="col-ms-12 text-center">
+                    <div class="alert alert-danger" role="alert">
+                    <p>
+                    <%= error %>
+                    </p>
+                    </div>     
+                </div>
+            <%} else {%>    
+                <div class="col-ms-12 text-center">
+                    <img id="loadingGif" class="hidden" src="/images/loading.gif">
+                    <div id="uploadPageAlert" class="alert hidden" role="alert">
+                    </div>  
+                    <br/> 
+                    <div id="progress" class="text-center hidden">
+                    <div id="bar"></div>
+                    <div id="percent">0%</div >
+                    <div id="message"></div>
+                    </div>
+                </div>
+            <% } %> 
+            <form action="/submission/update/<%= submissionId %>" 
+                id="uploadForm"
+                class="was-validated justify-content-center"
+                method="POST"
+                enctype="multipart/form-data">
+                <input type="hidden" name="submissionId" value="<%= submissionId %>">
+                
+                <fieldset>
+                    <h6 style=font-weight:bold;color:teal>Submission ID : <%= submissionId %></h6>
+                    <hr>
+                    <h3 class="fs-subtitle">Do You Want to Place an Embargo On The Data?</h3>
+                    <select class="col-md-5 data-embargo-select" name="dataEmbargo" required="true" onchange="validateStep(2)">
+                    <option value = "0">No</option>
+                    <option value = "1">Yes</option>
+                    </select> 
+                    <% if (typeof moment !== 'undefined'){ %>
+                    <input class="col-md-5 embargoDatePicker hidden" type="date" name="embargoDate"
+                    value="<%= moment().format('YYYY-MM-DD'); %>" min="<%= moment().format('YYYY-MM-DD'); %>" max="<%= moment().add(1, 'years').format('YYYY-MM-DD'); %>" oninput="validateStep(2)"  onfocusout="validateStep(2)">
+                    <% } else {%>
+                    <input class="col-md-5 embargoDatePicker hidden" type="date" name="embargoDate" oninput="validateStep(2)"  onfocusout="validateStep(2)">
+                    <% }%>
+                        <br>
+
+                <button type="submit" id="uploadFormSubmitButton" class="multi-form-submit-btn" value="Upload!" onfocus="validateStep(3)">Submit</button>
+                    
+                </fieldset>
+                
+            </form>
+            <% } %>
+        </div>
+    </div>
+</div>
+<% include ../footer %>
+

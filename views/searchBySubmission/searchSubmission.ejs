@@ -1,0 +1,164 @@
+<% include ../header %>
+
+<% if (typeof error !== 'undefined' && error != null){ %>
+<div class="col-ms-12 text-center">
+  <div class="alert alert-danger" role="alert">
+    <%= error %>
+  </div>     
+</div>
+<% } else {%>    
+<div class="col-ms-12 text-center">
+  <img id="loadingGif" class="hidden" src="/images/loading.gif">
+  <div id="searchPageAlert" class="alert hidden" role="alert">
+  </div>     
+</div>
+<% } %>    
+<style type="text/css">
+  .searchForm fieldset .serach-query-row{
+    width: 100%;
+  }
+
+  @media only screen and (min-width: 769px) {
+    .searchForm fieldset .serach-query-row{
+      white-space: nowrap;
+    }
+  }
+</style>
+
+<!-- MultiStep Form -->
+<div class="row">
+  <div class="col-md-12 ">
+    <form ref='searchForm' class="searchForm" id='uploadForm' action="/searchSubmission" method="post">
+      <!-- progressbar 
+      <ul id="progressbar">
+        <li class="active">Query</li>
+        <li>Refine by Geo-Region</li>
+        <li>Refine by Color Space</li>
+      </ul>
+    -->
+      <fieldset>
+        <h3 class="mb-3">Search By Submission Details </h3>
+        <hr>
+          <div class="col-md-3">
+            <input type="text" class="form-control" name="name" id="name" placeholder="Researcher Name" value="">
+          </div>
+          <div class="col-md-3">
+            <input type="text" class="form-control" name="institute" id="institute" placeholder="Institution Affiliation" value="">
+          </div>
+          <div class="col-md-3">
+            <input type="text" class="form-control" name="submissionId" id="submissionId" placeholder="Submission Id" value="">
+          </div>
+          <div class="col-md-3">
+            <input type="text" class="form-control" name="doi" id="doi" placeholder="DOI" value="">
+          </div>
+          <div class="col-md-3">
+            <!-- <input type="text" class="form-control" name="typeOfData" id="typeOfData" placeholder="Data Type" value=""> -->
+            <select id="typeOfData" name= "typeOfData">
+              <option value="">Data Type</option>
+              <option value = "reflectance">Reflectance</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <!-- <input type="text" class="form-control" name="dataFrom" id="dataFrom" placeholder="Data Source" value="">-->
+            <select id="dataFrom" name= "dataFrom">
+              <option value="">Data Source</option>
+              <option value = "field">Field</option>
+              <option value = "museum">Museum</option>
+            </select>
+          </div>
+
+        <button style="display: block; margin: auto;" type="submit" id="" class="btn btn-primary" value="Search!">Search</button>
+      </fieldset>
+    </form>
+  </div>
+</div>
+<br>
+
+<!-- Search Form -->
+<div class="row">
+    <div class="col-md-12 ">
+          <% if (typeof searchResult !== 'undefined' && searchResult != null){ %>
+          <div class="col-ms-12 text-center">
+            <div class="alert alert-success" role="alert" style="line-height: 40px;">
+              Displaying <%= searchResult.length %> Unique Results 
+              <% if (searchResult.length > 0 ){ %>
+              (Found <%= searchResult[0].TotalSearchResultCount %> in Total)! 
+              <!--<button type="button" class="btn btn-primary" style="position: absolute; right: 10px;" onclick="downloadAllResults()">Download All</button>-->         
+              <form ref='downloadForm' class="downloadForm" id='downloadForm' action="/searchSubmission/downloadSearchResult" method="post">
+                <fieldset>
+                  <input type="text" class="form-control hidden" name="SearchResultId" id="SearchResultId" placeholder="SearchResultId" value="<%= searchResult[0].SearchResultId %>">
+                  <button type="submit" id="" class="btn btn-primary" value="Download All!">Download</button>
+                </fieldset>
+              </form>
+              <% } %>    
+            </div>     
+          </div>
+          <% } %>  
+    </div>
+</div>
+<% if(searchResult !== null){%>
+<div class="table-responsive" style="background: white;">
+        <table class="table table-hover text-center" >
+          <thead class="thead-light">
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">SubmissionId</th>
+              <th scope="col">Data Source</th>
+              <!-- <th scope="col">Infraspecific Epithet</th> -->
+              <th scope="col">Type of Data</th>
+              <th scope="col">DOI</th>
+              <th scope="col">Institution Affiliation</th>
+              <th scope="col">Count</th>
+              <!-- <th scope="col">url</th> -->
+            </tr>
+          </thead>
+          <tbody>
+            <% if(searchResult !== null){ %>
+              <% for (var i = 0; i < searchResult.length; i++) { %>
+                <tr>
+                  <th scope="row"><%= i+1 %></th>
+                  <td><%= searchResult[i].submissionId %></td>
+                  <td><%= searchResult[i].dataFrom %></td>
+                  <!-- <td><%= searchResult[i].infraspecificepithet %></td> -->
+                  <td><%= searchResult[i].typeOfData %></td>
+                  <td><%= searchResult[i].doi %></td>
+                  <td><%= searchResult[i].institute %></td>
+                  <td><%= searchResult[i].count %></td>
+                  <!-- <td><a class="btn" href="<%= searchResult[i].url %>">Download</a></td> -->
+                  <td class="hidden metaID"><%= searchResult[i]._id %></td>
+                </tr>    
+              <% } %>          
+            <% } %>
+          </tbody>
+        </table>
+</div>
+<% } %>
+<% include ../footer %>
+
+<script type="text/javascript">
+function downloadAllResults() {
+  var requestedData =  $(".metaID").map(function(){
+    return $(this).context.textContent;
+  }).get();
+  $.post( "/search/download", {ids: JSON.stringify(requestedData)},function(retData) {
+      console.log(retData);
+      download("researchData.zip", retData);
+
+      $("body").append("<iframe src='" + retData.url+ "' style='display: none;' ></iframe>");
+    } 
+  );
+
+  function download(filename, data) {
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;base64,' + data);
+    element.setAttribute('download', filename);
+
+    element.style.display = 'none';
+    document.body.appendChild(element);
+
+    element.click();
+
+    document.body.removeChild(element);
+  }
+}
+</script>
