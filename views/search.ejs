@@ -143,8 +143,7 @@
                                     <input type="hidden" id='polyCoordinates' name='polyCoordinates'>
                                     <div class="col-md-3">
                                       <button style="display: block; margin: auto;" type="button" id=""
-                                        class="btn btn-primary showMapBtn" onclick="showhidemap()"
-                                        value="Search!">Map</button>
+                                        class="btn btn-primary showMapBtn" onclick="showhidemap()">Show Map</button>
                                     </div>
                                     <div class="col-md-3">
                                       <button style="display: block; margin: auto;" type="submit" id=""
@@ -301,10 +300,12 @@
                 function showhidemap() {  // Hide show function
                   if (document.querySelector('.map-container').classList.contains('d-none')) {
                     document.querySelector('.map-container').classList.remove('d-none');
+                    document.querySelector('.showMapBtn').innerHTML = 'Hide Map'
                     resultWithCoordinate();
                   }
                   else {
                     document.querySelector('.map-container').classList.add('d-none');
+                    document.querySelector('.showMapBtn').innerHTML = 'Show Map'
                   }
                   // checkonmap()
                 }
@@ -728,7 +729,8 @@
                   // })
 
                   //  console.log(count);
-                  document.getElementById('resultCoordinate').innerHTML = 'Displaying location of ' + count + ' unique records out of ' + sumResult + ' records in total !'
+                  if (document.getElementById('resultCoordinate'))
+                    document.getElementById('resultCoordinate').innerHTML = 'Displaying location of ' + count + ' unique records out of ' + sumResult + ' records in total !'
                 }
               </script>
               <script>
