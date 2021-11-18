@@ -16,11 +16,11 @@
 
 <!--<body background="/images/bg.jpg">-->
 <body>
-<nav class="navbar navbar-expand-md bg-secondary navbar-dark sticky-top"> <a class="navbar-brand" href="/">Nature's Palette</a>
+<nav class="navbar navbar-expand-md bg-secondary navbar-dark sticky-top"> <a class="navbar-brand dropdown-item-cache-clear" href="/">Nature's Palette</a>
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation"> <span class="navbar-toggler-icon"></span> </button>
   <div class="collapse navbar-collapse " id="navbarsExampleDefault">
     <ul class="navbar-nav mr-auto">
-      <li class="nav-item"> <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a> </li>
+      <li class="nav-item"> <a class="nav-link dropdown-item-cache-clear" href="/">Home <span class="sr-only">(current)</span></a> </li>
       <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           Explore
@@ -28,14 +28,14 @@
         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
           <a class="dropdown-item" href="/search">Search Data</a>
           <div class="dropdown-divider"></div>
-          <a class="dropdown-item" href="/searchSubmission">Search By Submission</a>
+          <a class="dropdown-item dropdown-item-cache-clear" href="/searchSubmission">Search By Submission</a>
           <div class="dropdown-divider"></div>
-          <a class="dropdown-item" href="/upload/startUpload">Upload Data</a> 
+          <a class="dropdown-item dropdown-item-cache-clear" href="/upload/startUpload">Upload Data</a> 
           <% if (typeof user!== 'undefined' && user != null && user.isAdmin == 1) { %>
           <div class="dropdown-divider"></div>
-          <a class="dropdown-item" href="/searchTerms">Manage Search Term</a>
+          <a class="dropdown-item dropdown-item-cache-clear" href="/searchTerms">Manage Search Term</a>
           <div class="dropdown-divider"></div>
-          <a class="dropdown-item" style= "color: red" href="/search/deleteData">Clear Database</a> 
+          <a class="dropdown-item dropdown-item-cache-clear" style= "color: red" href="/search/deleteData">Clear Database</a> 
           <% } %>
         </div>
       </li>
@@ -44,11 +44,11 @@
               About
             </a>
             <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-              <a class="dropdown-item" href="/about">About Nature's Palette</a>
+              <a class="dropdown-item dropdown-item-cache-clear" href="/about">About Nature's Palette</a>
               <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="/team">Team and Committee</a>
+              <a class="dropdown-item dropdown-item-cache-clear" href="/team">Team and Committee</a>
               <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="/partners">Partners and Supporters</a>
+              <a class="dropdown-item dropdown-item-cache-clear" href="/partners">Partners and Supporters</a>
             </div>
         </li>
 
@@ -57,11 +57,11 @@
             Help
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-            <a class="dropdown-item" href="/template">Submission Process</a>
+            <a class="dropdown-item dropdown-item-cache-clear" href="/template">Submission Process</a>
             <div class="dropdown-divider"></div>
-            <a class="dropdown-item" href="/questions">FAQ</a>
+            <a class="dropdown-item dropdown-item-cache-clear" href="/questions">FAQ</a>
             <div class="dropdown-divider"></div>
-            <a class="dropdown-item" href="/contact">Contact Us</a>
+            <a class="dropdown-item dropdown-item-cache-clear" href="/contact">Contact Us</a>
           </div>
       </li>
     </ul>

@@ -47,8 +47,8 @@ var MetaDataInformationSchema = new Schema({
   sex: String,
   lifestage: String,
   country: String,  
-  decimallatitude:String,
-  decimallongitude:String,
+  decimallatitude:Number,
+  decimallongitude:Number,
 
   timestamp: { type: Date, default: Date.now() }
   },

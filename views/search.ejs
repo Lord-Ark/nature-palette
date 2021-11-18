@@ -76,6 +76,7 @@
                     <input type="hidden" id='mappoly' name='mappoly'>
 
                     <% } %>
+
                       <!-- <input type="hidden" value="<%= searchResult%>""> -->
                       <hr>
                       <!--
@@ -138,6 +139,8 @@
                                 </div>
                                 <% } %>
                                   <% } %>
+                                    <input type="hidden" id='mapCoordinate' name='mapCoordinate'>
+                                    <input type="hidden" id='polyCoordinates' name='polyCoordinates'>
                                     <div class="col-md-3">
                                       <button style="display: block; margin: auto;" type="button" id=""
                                         class="btn btn-primary showMapBtn" onclick="showhidemap()"
@@ -290,9 +293,11 @@
                 var polysArray = [];
                 var globalmap;
                 var polydrawn;
-                var infowindow;
-                var searchResult = "<%= searchResult %>"
+                var drawingManager;
+                // var infowindow;
+                // var searchResult = "<%= searchResult %>"
                 var rectangle;
+                var polygon;
                 function showhidemap() {  // Hide show function
                   if (document.querySelector('.map-container').classList.contains('d-none')) {
                     document.querySelector('.map-container').classList.remove('d-none');
@@ -307,18 +312,16 @@
 
                 // initialize and load map when open the map page
                 function initMap() {
-                  const chicago = new google.maps.LatLng(41.85, -87.65);
 
-                  //import { MarkerClusterer } from "@googlemaps/markerclusterer";
-
+                  const initPoint = new google.maps.LatLng(-23.85, -60.65);
                   const map = new google.maps.Map(document.getElementById("map"), {
-                    center: chicago,
-                    zoom: 3,
+                    center: initPoint,
+                    zoom: 2,
                   });
                   globalmap = map;
 
 
-                  const drawingManager = new google.maps.drawing.DrawingManager({
+                  drawingManager = new google.maps.drawing.DrawingManager({
                     drawingControl: true,
                     drawingControlOptions: {
                       position: google.maps.ControlPosition.TOP_CENTER,
@@ -330,17 +333,18 @@
                     rectangleOptions: {
                       editable: true,
                       draggable: true
+                    },
+                    polygonOptions: {
+                      editable: true,
+                      draggable: true
                     }
                   });
 
                   // When overlay completed, it will be saved to polysArray.
                   google.maps.event.addListener(drawingManager, 'overlaycomplete', function (event) {
                     drawingManager.setDrawingMode(null);
-
-                    // rectangle = event.overlay;
-
+                    drawingManager.setMap(null);
                     polysArray.push(event.overlay)
-                    // polydrawn = event.overlay
                     if (event.type == 'rectangle') {
                       var northeast = event.overlay.getBounds().getNorthEast();
                       var southwest = event.overlay.getBounds().getSouthWest();
@@ -348,30 +352,42 @@
                       var point1 = { 'lat': northeast.lat(), 'lng': northeast.lng() }
                       var point2 = { 'lat': southwest.lat(), 'lng': southwest.lng() }
 
-                      console.log(point1, '----', point2)
+                      let cordinateString = point1.lat + '_' + point1.lng + '_' + point2.lat + '_' + point2.lng
+                      let cookieObject = {};
+                      cookieObject.type = 'rectangle';
+                      cookieObject.points = cordinateString
+                      document.getElementById('mapCoordinate').value = cordinateString
+                      saveMapState(JSON.stringify(cookieObject))
                     }
 
                     else if (event.type == 'polygon') {
+                      debugger
                       var coordinatesArray = event.overlay.getPath().getArray();
+                      var cookieString = ''
                       for (let i = 0; i < coordinatesArray.length; i++) {
+                        if (i != 0)
+                          cookieString += '_'
                         const element = coordinatesArray[i];
-                        console.log(element.lat(), '----', element.lng())
+                        cookieString += element.lat() + '_' + element.lng()
                       }
+                      var copyCord = [...coordinatesArray];
+                      var mapCordinatepoints = getMapCordinateForPolygon(copyCord)
+                      document.getElementById('mapCoordinate').value = mapCordinatepoints
+
+
+
+                      let cookieObject = {};
+                      cookieObject.type = 'polygon';
+                      cookieObject.points = cookieString
+                      // console.log(cookieString);
+                      document.getElementById('polyCoordinates').value = cookieString
+                      saveMapState(JSON.stringify(cookieObject))
                       // localStorage.setItem('polygondrawn', JSON.stringify({ cordinate: coordinatesArray }))
                     }
 
-
-                    cookiString = point1.lat + '_' + point1.lng + '_' + point2.lat + '_' + point2.lng
-                    saveMapState(cookiString)
-                    // console.log(coordinatesArray)
-                    // globalmap = event
-                    // polysArray.push(poly)
-                    // document.getElementById('mappoly').value = polysArray
-
-
-                    event.overlay.addListener("bounds_changed", function () {
-
-                      // alert('bounds changed!');
+                    event.overlay.addListener("bounds_changed", function (e) {
+                      alert('bounds changed!');
+                      // console.log(e)
                       if (event.type == 'rectangle') {
                         var northeast = event.overlay.getBounds().getNorthEast();
                         var southwest = event.overlay.getBounds().getSouthWest();
@@ -382,15 +398,48 @@
                         console.log(point1, '----', point2)
 
                         cookiString = point1.lat + '_' + point1.lng + '_' + point2.lat + '_' + point2.lng
+                        document.getElementById('mapCoordinate').value = cookiString
                         saveMapState(cookiString)
                       }
+
                     });
+
+                    event.overlay.addListener("mouseup", function () {
+                      if (event.type == 'polygon') {
+                        var coordinatesArray = event.overlay.getPath().getArray();
+                        var cookieString = ''
+                        for (let i = 0; i < coordinatesArray.length; i++) {
+                          if (i != 0)
+                            cookieString += '_'
+                          const element = coordinatesArray[i];
+                          cookieString += element.lat() + '_' + element.lng()
+                        }
+                        var copyCord = [...coordinatesArray];
+                        var mapCordinatepoints = getMapCordinateForPolygon(copyCord)
+                        document.getElementById('mapCoordinate').value = mapCordinatepoints
+
+                        let cookieObject = {};
+                        cookieObject.type = 'polygon';
+                        cookieObject.points = cookieString
+                        console.log(cookieString);
+                        document.getElementById('polyCoordinates').value = cookieString
+                        saveMapState(JSON.stringify(cookieObject))
+                      }
+                    })
+                    event.overlay.addListener("click", function () {
+                      alert('click')
+                    })
 
                   });
 
-
+                  debugger;
                   // setup drawingManager tool 
-                  drawingManager.setMap(globalmap);
+                  if (rectangle != null || polygon != null || polysArray.length > 0) {
+
+                  }
+                  else {
+                    drawingManager.setMap(globalmap);
+                  }
                   // if (JSON.parse(localStorage.getItem('polygondrawn')) != undefined) {
                   //   console.log(JSON.parse(localStorage.getItem('polygondrawn')))
                   // }
@@ -398,16 +447,13 @@
 
 
                   if (rectangle != null) {
+                    drawingManager.setMap(null)
                     rectangle.addListener("bounds_changed", function () {
 
                       console.log('bound changed!');
 
                       const ne = rectangle.getBounds().getNorthEast();
                       const sw = rectangle.getBounds().getSouthWest();
-
-                      // alert(rectangle.getBounds().north);
-
-                      // alert(ne.lat());
 
                       var mapZoom = globalmap.getZoom();
                       var mapCenter = globalmap.getCenter();
@@ -418,17 +464,40 @@
                       var point2 = { 'lat': sw.lat(), 'lng': sw.lng() }
 
                       var extra = point1.lat + '_' + point1.lng + '_' + point2.lat + '_' + point2.lng;
-                      var cookiestring = mapLat + "_" + mapLng + "_" + mapZoom + "_" + extra;
-
+                      let cookieObject = {};
+                      cookieObject.type = 'rectangle';
+                      cookieObject.points = extra
+                      var cookiestring = mapLat + "|" + mapLng + "|" + mapZoom + "|" + JSON.stringify(cookieObject);
+                      document.getElementById('mapCoordinate').value = extra
                       setCookie("myMapCookie", cookiestring, 30);
                     });
                   }
 
-                }
+                  if (polygon != null) {
+                    drawingManager.setMap(null)
+                    polygon.addListener("mouseup", function () {
+                      // alert('polygon')
+                      var coordinatesArray = polygon.getPath().getArray();
+                      var cookieString = ''
+                      for (let i = 0; i < coordinatesArray.length; i++) {
+                        if (i != 0)
+                          cookieString += '_'
+                        const element = coordinatesArray[i];
+                        cookieString += element.lat() + '_' + element.lng()
+                      }
+                      var copyCord = [...coordinatesArray];
+                      var mapCordinatepoints = getMapCordinateForPolygon(copyCord)
+                      document.getElementById('mapCoordinate').value = mapCordinatepoints
 
-                // window.onunload = function () {
-                //   alert('1');
-                // }
+                      let cookieObject = {};
+                      cookieObject.type = 'polygon';
+                      cookieObject.points = cookieString
+                      console.log(cookieString);
+                      document.getElementById('polyCoordinates').value = cookieString
+                      saveMapState(JSON.stringify(cookieObject))
+                    })
+                  }
+                }
 
                 document.getElementById("clear-map").addEventListener("click", function () {
                   if (polysArray.length > 0) {
@@ -436,11 +505,16 @@
                       element.setMap(null);
                     });
                   }
+                  drawingManager.setMap(globalmap);
                   // localStorage.removeItem('polygondrawn') 
                   clearCookie("myMapCookie");
-                  rectangle.setMap(null);
+                  if (rectangle != null)
+                    rectangle.setMap(null);
+                  if (polygon != null)
+                    polygon.setMap(null)
+                  document.getElementById('polyCoordinates').value = null
+                  document.getElementById('mapCoordinate').value = null
                 });
-
 
                 function saveMapState(extra) {
                   // const map = new google.maps.Map(document.getElementById("map"));
@@ -448,43 +522,118 @@
                   var mapCenter = globalmap.getCenter();
                   var mapLat = mapCenter.lat();
                   var mapLng = mapCenter.lng();
-                  var cookiestring = mapLat + "_" + mapLng + "_" + mapZoom + "_" + extra;
+                  var cookiestring = mapLat + "|" + mapLng + "|" + mapZoom + "|" + extra;
                   setCookie("myMapCookie", cookiestring, 30);
+                }
+
+                function getMapCordinateForPolygon(polycordinatearray) {
+                  const elementlat = [];
+                  const elementlng = [];
+                  for (let i = 0; i < polycordinatearray.length; i++) {
+                    elementlat[i] = polycordinatearray[i].lat();
+                    elementlng[i] = polycordinatearray[i].lng();
+                  }
+                  var elementLatSort = sortTest(elementlat);
+                  var elementLngSort = sortTest(elementlng);
+
+                  const maxLat = elementLatSort[elementLatSort.length - 1];
+                  const minLat = elementLatSort[0];
+
+                  const maxLng = elementLngSort[elementLngSort.length - 1];
+                  const minLng = elementLngSort[0];
+                  var cordinateString = maxLat + '_' + maxLng + '_' + minLat + '_' + minLng
+                  return cordinateString
+                }
+
+                function getCoordinateFromStaticPoints(polycordinatearray) {
+                  const elementlat = [];
+                  const elementlng = [];
+                  for (let i = 0; i < polycordinatearray.length; i++) {
+                    elementlat[i] = polycordinatearray[i].lat;
+                    elementlng[i] = polycordinatearray[i].lng;
+                  }
+                  var elementLatSort = sortTest(elementlat);
+                  var elementLngSort = sortTest(elementlng);
+
+                  const maxLat = elementLatSort[elementLatSort.length - 1];
+                  const minLat = elementLatSort[0];
+
+                  const maxLng = elementLngSort[elementLngSort.length - 1];
+                  const minLng = elementLngSort[0];
+                  var cordinateString = maxLat + '_' + maxLng + '_' + minLat + '_' + minLng
+                  return cordinateString
+                }
+
+                function sortTest(arr) {
+                  var len = arr.length;
+                  for (var i = 0; i < len - 1; i++) {
+                    for (var j = 0; j < len - 1 - i; j++) {
+                      if (arr[j] > arr[j + 1]) {
+                        var temp = arr[j + 1];
+                        arr[j + 1] = arr[j];
+                        arr[j] = temp;
+                      }
+                    }
+                  }
+                  return arr;
                 }
 
                 function loadMapState() {
                   var gotCookieString = getCookie("myMapCookie");
-                  var splitStr = gotCookieString.split("_");
-                  var savedMapLat = parseFloat(splitStr[0]);
-                  var savedMapLng = parseFloat(splitStr[1]);
-                  var savedMapZoom = parseFloat(splitStr[2]);
-                  const northeast = {}
-                  const southwest = {}
-                  northeast.lat = parseFloat(splitStr[3]);
-                  northeast.lng = parseFloat(splitStr[4]);
-                  southwest.lat = parseFloat(splitStr[5]);
-                  southwest.lng = parseFloat(splitStr[6]);
-                  if ((!isNaN(savedMapLat)) && (!isNaN(savedMapLng)) && (!isNaN(savedMapZoom)) &&
-                    (!isNaN(northeast.lat)) && (!isNaN(northeast.lng)) && (!isNaN(southwest.lat)) && (!isNaN(southwest.lng))) {
+                  if (gotCookieString != "") {
+                    var splitStr = gotCookieString.split("|");
+                    var savedMapLat = parseFloat(splitStr[0]);
+                    var savedMapLng = parseFloat(splitStr[1]);
+                    var savedMapZoom = parseFloat(splitStr[2]);
+                    var polyDetail = JSON.parse(splitStr[3])
+                    if (polyDetail.type == 'rectangle') {
+                      let recBounds = polyDetail.points;
+                      let boundsplit = recBounds.split("_")
+                      const northeast = {}
+                      const southwest = {}
+                      northeast.lat = parseFloat(boundsplit[0]);
+                      northeast.lng = parseFloat(boundsplit[1]);
+                      southwest.lat = parseFloat(boundsplit[2]);
+                      southwest.lng = parseFloat(boundsplit[3]);
+                      document.getElementById('mapCoordinate').value = recBounds
+                      if ((!isNaN(savedMapLat)) && (!isNaN(savedMapLng)) && (!isNaN(savedMapZoom)) &&
+                        (!isNaN(northeast.lat)) && (!isNaN(northeast.lng)) && (!isNaN(southwest.lat)) && (!isNaN(southwest.lng))) {
+                        globalmap.setCenter(new google.maps.LatLng(savedMapLat, savedMapLng));
+                        globalmap.setZoom(savedMapZoom);
 
-                    globalmap.setCenter(new google.maps.LatLng(savedMapLat, savedMapLng));
-                    globalmap.setZoom(savedMapZoom);
-
-                    rectangle = new google.maps.Rectangle({
-                      editable: true,
-                      draggable: true
-                    })
-                    rectangle.setBounds({
-                      north: northeast.lat,
-                      south: southwest.lat,
-                      west: southwest.lng,
-                      east: northeast.lng
-                    })
-                    rectangle.setMap(globalmap)
-                    // var NE = new google.maps.LatLng(northeast.lat, northeast.lng);
-                    // var SW = new google.maps.LatLng(southwest.lat, southwest.lng);
-                    // var newRect = new google.maps.LatLngBounds(SW, NE);
-                    // rectangle.setBounds(newRect);
+                        rectangle = new google.maps.Rectangle({
+                          editable: true,
+                          draggable: true
+                        })
+                        rectangle.setBounds({
+                          north: northeast.lat,
+                          south: southwest.lat,
+                          west: southwest.lng,
+                          east: northeast.lng
+                        })
+                        rectangle.setMap(globalmap)
+                      }
+                    }
+                    else if (polyDetail.type == 'polygon') {
+                      let polyBounds = polyDetail.points;
+                      let boundsplit = polyBounds.split("_")
+                      let polygonbounds = []
+                      for (let i = 0; i < boundsplit.length; i = i + 2) {
+                        polygonbounds.push({ lat: parseFloat(boundsplit[i]), lng: parseFloat(boundsplit[i + 1]) });
+                      }
+                      var copyCord = [...polygonbounds];
+                      var mapCordinatepoints = getCoordinateFromStaticPoints(copyCord)
+                      document.getElementById('mapCoordinate').value = mapCordinatepoints
+                      document.getElementById('polyCoordinates').value = polyBounds
+                      polygon = new google.maps.Polygon({
+                        paths: polygonbounds,
+                        fillColor: '#000000',
+                        fillOpacity: 0.35,
+                        editable: true,
+                        draggable: true
+                      })
+                      polygon.setMap(globalmap)
+                    }
                   }
                 }
 
@@ -512,123 +661,57 @@
                   setCookie(c_name, "", -1);
                 }
 
-                function checkonmap() {
-                  if (searchResult !== 'undefined' && searchResult != null && searchResult != '') {
-                    // console.log(searchResult)
-                    var poly1 = JSON.parse(localStorage.getItem('polygondrawn'));
-                    var poly
-                    if (poly1 != undefined)
-                      poly = new google.maps.Polygon({ paths: poly1.cordinate }, "#000000", 1, 1, "#fff000", 0.3);
-
-                    console.log(document.getElementById('mappoly').value)
-                    for (let i = 0; i < searchResult.length; i++) {
-                      const element = searchResult[i];
-                      // console.log(element.lat,'-----',element.long)
-                    }
-                    alert('there is search')
-                    console.log('polyarray -------', polysArray)
-                  }
-                  else {
-                    alert('no search found')
-                  }
-                  var poly1 = JSON.parse(localStorage.getItem('polygondrawn'));
-                  var poly
-                  if (poly1 != undefined) {
-                    poly = new google.maps.Polygon({
-                      paths: poly1.cordinate, strokeColor: "#FF0000",
-                      strokeOpacity: 0.8,
-                      strokeWeight: 2,
-                      fillColor: "#FF0000",
-                      fillOpacity: 0.35,
-                    });
-                    poly.setMap(globalmap)
-                    polydrawn = poly
-                  }
-                  // var polygon = new google.maps.Polygon([], "#000000", 1, 1, "#336699", 0.3);
-                  // var isWithinPolygon = polygon.containsLatLng(40, -90);
-                }
-
                 function resultWithCoordinate() {
+                  // Counting for results with longtitude and latitude. 
                   var count = 0;
+                  // Counting for all results for been searched.
                   var sumResult = 0;
+                  //Counting for longtitude and latitude of the results that are not a number.
                   var countNaN = 0;
-                  const myLatLng1 = { lat: -25.363, lng: 131.044 };
-                  const myLatLng2 = { lat: -25.363, lng: 134.044 };
-                  const myLatLng3 = { lat: -25.363, lng: 136.044 };
-                  const myLatLng4 = { lat: -33.727111, lng: 150.371124 };
-                  const myLatLng5 = { lat: -33.718234, lng: 150.363181 };
-                  const myLatLng6 = { lat: -24.718234, lng: 150.363181 };
-                  const myLatLng7 = { lat: -23.718234, lng: 150.363181 };
-                  const myLatLng8 = { lat: -22.718234, lng: 150.363181 };
-                  const myLatLng9 = { lat: -21.718234, lng: 150.363181 };
-                  const myLatLng10 = { lat: -20.718234, lng: 150.363181 };
+
+                  // console.log(myLatLng1.lat);
+                  // const searchRows1 = document.querySelectorAll(myLatLng1);
+                  // console.log(searchRows1);
+
+                  //Get the result from the database.
                   const searchRows = document.querySelectorAll('.search-result-set .search-data-row')
+                  // console.log(searchRows)
+
+                  //Declare a new array to store the marker position pairs.
+                  var markArray = []
+                  //Loop every results in the searchRows and find lattitude and longitude for each results.
                   searchRows.forEach(term => {
+                    //Declare lat1 and long1 to store lattitude and longitude from dataset
                     var lat1 = term.querySelector('.dec-lat').innerHTML;
                     var long1 = term.querySelector('.dec-long').innerHTML;
+
+                    //Convert lat1 and long1 to become float format.
                     var latFloat = parseFloat(lat1);
                     var longFloat = parseFloat(long1);
 
                     // console.log(latFloat);
-
-
+                    //Check for lattitude and longitude for all the results and find that are not a number.  
                     if (isNaN(latFloat) || isNaN(longFloat)) {
+                      //Counting for result that is not a number.
                       console.log("Has NaN");
                       countNaN++;
                     } else {
-
+                      //Counting for result that are number.
                       count++;
+
+                      //Use nmark to save the pair of longitude and latitude of the result.
+                      let nmark = new google.maps.Marker({
+                        position: { 'lat': latFloat, 'lng': longFloat },
+                        globalmap
+                      });
+                      //Push the nmark, the pair of long and lat into the markArray.
+                      markArray.push(nmark)
                     }
 
                     sumResult++;
-
                     //////////////Find decimal lattitude longitude
                   })
-
-                  var mark1 = new google.maps.Marker({
-                    position: myLatLng1,
-                    globalmap
-                  });
-                  var mark2 = new google.maps.Marker({
-                    position: myLatLng2,
-                    globalmap
-                  });
-                  var mark3 = new google.maps.Marker({
-                    position: myLatLng3,
-                    globalmap
-                  });
-                  var mark4 = new google.maps.Marker({
-                    position: myLatLng4,
-                    globalmap
-                  });
-                  var mark5 = new google.maps.Marker({
-                    position: myLatLng5,
-                    globalmap
-                  });
-                  var mark6 = new google.maps.Marker({
-                    position: myLatLng5,
-                    globalmap
-                  });
-                  var mark7 = new google.maps.Marker({
-                    position: myLatLng5,
-                    globalmap
-                  });
-                  var mark8 = new google.maps.Marker({
-                    position: myLatLng5,
-                    globalmap
-                  });
-                  var mark9 = new google.maps.Marker({
-                    position: myLatLng5,
-                    globalmap
-                  });
-                  var mark10 = new google.maps.Marker({
-                    position: myLatLng5,
-                    globalmap
-                  });
-
-                  // create an array of all your markers
-                  const markers = [mark1, mark2, mark3, mark4, mark5, mark6, mark7, mark8, mark9, mark10];
-
+                  // add cluster optopm
                   const clusterOptions = {
 
                     imagePath: "https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m",
@@ -638,12 +721,30 @@
                   };
 
                   // Enable marker clustering for this map and these markers
-                  const markerClusterer = new MarkerClusterer(globalmap, markers, clusterOptions);
+                  const markerClusterer = new MarkerClusterer(globalmap, markArray, clusterOptions);
                   //new MarkerClusterer({ markers, map });
-                  infowindow = new google.maps.InfoWindow({
-                    content: " "
-                  })
+                  // infowindow = new google.maps.InfoWindow({
+                  //   content: " "
+                  // })
+
                   //  console.log(count);
-                  document.getElementById('resultCoordinate').innerHTML = 'Found ' + count + ' records and' + ' with ' + countNaN + ' no lattitude or longtitude results' + ' (' + sumResult + ' records in total !!)'
+                  document.getElementById('resultCoordinate').innerHTML = 'Displaying location of ' + count + ' unique records out of ' + sumResult + ' records in total !'
+                }
+              </script>
+              <script>
+                var list = document.getElementsByClassName("dropdown-item-cache-clear");
+                for (var i in list) {
+                  list[i].onclick = clearCache;
+                }
+                function clearCache() {
+                  drawingManager.setMap(globalmap);
+                  if (polysArray.length > 0) {
+                    polysArray.forEach(element => {
+                      element.setMap(null);
+                    });
+                  }
+                  // localStorage.removeItem('polygondrawn') 
+                  clearCookie("myMapCookie");
+                  rectangle.setMap(null);
                 }
               </script>

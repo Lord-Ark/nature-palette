@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const moment = require('moment');
 var mongoose = require('mongoose');
-
+var { PolyUtil } = require("node-geometry-library");
 const uuidv1 = require('uuid/v1');
 var zipHelper = require('../helpers/zipHelper');
 
@@ -55,7 +55,7 @@ exports.getSearch = function (req, res) {
 exports.postSearch = function (req, res, next) {
   extractSearchQueryFromReq(req.body).then(function (query) {
     var columns = '_id rawFileId cataloguenumber genus specificepithet infraspecificepithet sex lifestage patch url decimallatitude decimallongitude';
-    //console.log(query);
+    console.log(query);
     MetaDataInformationModel.find(query, columns, async function (err, metaDatas) {
       if (err) {
         console.log("Error retrieving meta data information from DB: " + err);
@@ -67,11 +67,22 @@ exports.postSearch = function (req, res, next) {
         var resultsSigList = [];
         var ids = [];
         var resultMetadats = [];
+        let polygonbounds = []
         for (var metaRow of metaDatas) {
           resultMetadats.push(getSearchRowSignature(metaRow));
         }
 
-        
+        if (req.body.polyCoordinates && req.body.polyCoordinates != null) {
+          console.log(req.body.polyCoordinates, '---')
+          let polyBounds = req.body.polyCoordinates;
+          let boundsplit = polyBounds.split("_")
+
+          for (let i = 0; i < boundsplit.length; i = i + 2) {
+            polygonbounds.push({ lat: parseFloat(boundsplit[i]), lng: parseFloat(boundsplit[i + 1]) });
+          }
+
+        }
+
         for (var metaData of metaDatas) {
           // push id into ids list 
           //console.log("ids are:" + metaData._id);
@@ -98,10 +109,18 @@ exports.postSearch = function (req, res, next) {
             result.latitude = metaData.decimallatitude;
             result.longitude = metaData.decimallongitude;
 
+            let responseMap = true
+            if(polygonbounds.length>0){
+              responseMap = PolyUtil.containsLocation(
+                { lat: result.latitude, lng: result.longitude }, // point object {lat, lng}
+                polygonbounds
+              );
+            }
+            
             //var rFile = await RawFileModel.findById(metaData.rawFileId);
             //result.url = path.resolve(path.normalize(rFile.path));
-
-            results.push(result);
+            if (responseMap)
+              results.push(result);
             resultsSigList.push(sig);
           }
         }
@@ -121,7 +140,6 @@ exports.postSearch = function (req, res, next) {
 
         getEnabledSearchTerms().then(function (searchTermList) {
           res.render('search', { searchResult: results, searchTerms: searchTermList, error: null, user: req.user, input: req.body });
-
           //console.log('retrieved meta data information', ret);
           return;
         })
@@ -267,7 +285,6 @@ const searchTerms = ["institutioncode",
 // helper methods
 async function extractSearchQueryFromReq(reqBody) {
   var query = {};
-
   var searchTermsList = await SearchTermModel.find({ Enabled: true }, 'Name');
   searchTermsList = searchTermsList.map(x => x.Name);
 
@@ -283,6 +300,35 @@ async function extractSearchQueryFromReq(reqBody) {
       }).filter(function (e) { return e });
       query[term] = { $in: termValsList };
     }
+  }
+  if (reqBody.mapCoordinate && reqBody.mapCoordinate != '') {
+    var splitStr = reqBody.mapCoordinate.split("_");
+    const northeast = {}
+    const southwest = {}
+    northeast.lat = parseFloat(splitStr[0]);
+    northeast.lng = parseFloat(splitStr[1]);
+    southwest.lat = parseFloat(splitStr[2]);
+    southwest.lng = parseFloat(splitStr[3]);
+    console.log(northeast)
+    console.log(southwest)
+
+    if (northeast != null && southwest != null) {
+      if (southwest.lng < northeast.lng) {
+        query.decimallatitude = { $gte: southwest.lat, $lte: northeast.lat }
+        query.decimallongitude = { $gte: southwest.lng, $lte: northeast.lng }
+        console.log('----------------------------------------------------')
+        // console.log(southwest)
+      }
+
+      else {
+        query = QueryMakerForMapCoordinates(southwest.lat, northeast.lat, southwest.lng, northeast.lng, query)
+        // query.decimallatitude = { $gte: southwest.lat, $lte: northeast.lat }
+        // query = query + {$or:[{'decimallongitude' : {$gte: -180, $lte: northeast.lng}},{'decimallongitude': {$gte: southwest.lng, $lte: 180}}]}
+
+      }
+
+    }
+    //add functionality for searching on database
   }
 
   return query;
@@ -362,6 +408,36 @@ function generateMetaFile(metaDataIdsList) {
   return metaDataInformations;
 }
 
+function QueryMakerForMapCoordinates(southwestlat, northeastlat, southwestlng, northeastlng, query) {
+
+  let returnObj = {};
+  returnObj = {
+    $and: [
+      query,
+      {
+        $or: [
+          {
+            $and: [
+              { 'decimallatitude': { $lte: northeastlat } },
+              { 'decimallatitude': { $gte: southwestlat } },
+              { 'decimallongitude': { $gte: southwestlng } },
+              { 'decimallongitude': { $lte: 180 } }
+            ]
+          },
+          {
+            $and: [
+              { 'decimallatitude': { $lte: northeastlat } },
+              { 'decimallatitude': { $gte: southwestlat } },
+              { 'decimallongitude': { $gte: -180 } },
+              { 'decimallongitude': { $lte: northeastlng } }
+            ]
+          }
+        ]
+      }
+    ]
+  };
+  return returnObj;
+}
 
 
 
