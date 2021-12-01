@@ -309,26 +309,17 @@ async function extractSearchQueryFromReq(reqBody) {
     northeast.lng = parseFloat(splitStr[1]);
     southwest.lat = parseFloat(splitStr[2]);
     southwest.lng = parseFloat(splitStr[3]);
-    console.log(northeast)
-    console.log(southwest)
 
     if (northeast != null && southwest != null) {
       if (southwest.lng < northeast.lng) {
         query.decimallatitude = { $gte: southwest.lat, $lte: northeast.lat }
         query.decimallongitude = { $gte: southwest.lng, $lte: northeast.lng }
-        console.log('----------------------------------------------------')
-        // console.log(southwest)
       }
 
       else {
         query = QueryMakerForMapCoordinates(southwest.lat, northeast.lat, southwest.lng, northeast.lng, query)
-        // query.decimallatitude = { $gte: southwest.lat, $lte: northeast.lat }
-        // query = query + {$or:[{'decimallongitude' : {$gte: -180, $lte: northeast.lng}},{'decimallongitude': {$gte: southwest.lng, $lte: 180}}]}
-
       }
-
     }
-    //add functionality for searching on database
   }
 
   return query;

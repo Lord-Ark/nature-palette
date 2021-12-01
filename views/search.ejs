@@ -143,7 +143,7 @@
                                     <input type="hidden" id='polyCoordinates' name='polyCoordinates'>
                                     <div class="col-md-3">
                                       <button style="display: block; margin: auto;" type="button" id=""
-                                        class="btn btn-primary showMapBtn" onclick="showhidemap()">Show Map</button>
+                                        class="btn btn-primary showMapBtn" onclick="showhidemap()">Hide Map</button>
                                     </div>
                                     <div class="col-md-3">
                                       <button style="display: block; margin: auto;" type="submit" id=""
@@ -156,7 +156,7 @@
           </div>
         </div>
         <br>
-        <div class="col-md-12 map-container d-none">
+        <div class="col-md-12 map-container">
           <div class="map-frame">
             <% if (typeof searchResult !=='undefined' && searchResult !=null){ %>
               <div class="result-coordinate-div alert alert-info">
@@ -293,24 +293,21 @@
                 var globalmap;
                 var polydrawn;
                 var drawingManager;
+                var searchResult
                 // var infowindow;
                 // var searchResult = "<%= searchResult %>"
-                var rectangle;
                 var polygon;
-                function showhidemap() {  // Hide show function
+                
+                function showhidemap() {                  // Hide show function of the map
                   if (document.querySelector('.map-container').classList.contains('d-none')) {
                     document.querySelector('.map-container').classList.remove('d-none');
                     document.querySelector('.showMapBtn').innerHTML = 'Hide Map'
-                    resultWithCoordinate();
                   }
                   else {
                     document.querySelector('.map-container').classList.add('d-none');
                     document.querySelector('.showMapBtn').innerHTML = 'Show Map'
                   }
-                  // checkonmap()
                 }
-
-
                 // initialize and load map when open the map page
                 function initMap() {
 
@@ -327,13 +324,8 @@
                     drawingControlOptions: {
                       position: google.maps.ControlPosition.TOP_CENTER,
                       drawingModes: [
-                        google.maps.drawing.OverlayType.POLYGON,
-                        google.maps.drawing.OverlayType.RECTANGLE,
+                        google.maps.drawing.OverlayType.POLYGON
                       ]
-                    },
-                    rectangleOptions: {
-                      editable: true,
-                      draggable: true
                     },
                     polygonOptions: {
                       editable: true,
@@ -346,23 +338,8 @@
                     drawingManager.setDrawingMode(null);
                     drawingManager.setMap(null);
                     polysArray.push(event.overlay)
-                    if (event.type == 'rectangle') {
-                      var northeast = event.overlay.getBounds().getNorthEast();
-                      var southwest = event.overlay.getBounds().getSouthWest();
+                    if (event.type == 'polygon') {
 
-                      var point1 = { 'lat': northeast.lat(), 'lng': northeast.lng() }
-                      var point2 = { 'lat': southwest.lat(), 'lng': southwest.lng() }
-
-                      let cordinateString = point1.lat + '_' + point1.lng + '_' + point2.lat + '_' + point2.lng
-                      let cookieObject = {};
-                      cookieObject.type = 'rectangle';
-                      cookieObject.points = cordinateString
-                      document.getElementById('mapCoordinate').value = cordinateString
-                      saveMapState(JSON.stringify(cookieObject))
-                    }
-
-                    else if (event.type == 'polygon') {
-                      debugger
                       var coordinatesArray = event.overlay.getPath().getArray();
                       var cookieString = ''
                       for (let i = 0; i < coordinatesArray.length; i++) {
@@ -372,10 +349,8 @@
                         cookieString += element.lat() + '_' + element.lng()
                       }
                       var copyCord = [...coordinatesArray];
-                      var mapCordinatepoints = getMapCordinateForPolygon(copyCord)
+                      var mapCordinatepoints = getMapCordinateForPolygon(copyCord, false)
                       document.getElementById('mapCoordinate').value = mapCordinatepoints
-
-
 
                       let cookieObject = {};
                       cookieObject.type = 'polygon';
@@ -385,25 +360,6 @@
                       saveMapState(JSON.stringify(cookieObject))
                       // localStorage.setItem('polygondrawn', JSON.stringify({ cordinate: coordinatesArray }))
                     }
-
-                    event.overlay.addListener("bounds_changed", function (e) {
-                      alert('bounds changed!');
-                      // console.log(e)
-                      if (event.type == 'rectangle') {
-                        var northeast = event.overlay.getBounds().getNorthEast();
-                        var southwest = event.overlay.getBounds().getSouthWest();
-
-                        var point1 = { 'lat': northeast.lat(), 'lng': northeast.lng() }
-                        var point2 = { 'lat': southwest.lat(), 'lng': southwest.lng() }
-
-                        console.log(point1, '----', point2)
-
-                        cookiString = point1.lat + '_' + point1.lng + '_' + point2.lat + '_' + point2.lng
-                        document.getElementById('mapCoordinate').value = cookiString
-                        saveMapState(cookiString)
-                      }
-
-                    });
 
                     event.overlay.addListener("mouseup", function () {
                       if (event.type == 'polygon') {
@@ -416,7 +372,7 @@
                           cookieString += element.lat() + '_' + element.lng()
                         }
                         var copyCord = [...coordinatesArray];
-                        var mapCordinatepoints = getMapCordinateForPolygon(copyCord)
+                        var mapCordinatepoints = getMapCordinateForPolygon(copyCord, false)
                         document.getElementById('mapCoordinate').value = mapCordinatepoints
 
                         let cookieObject = {};
@@ -427,52 +383,16 @@
                         saveMapState(JSON.stringify(cookieObject))
                       }
                     })
-                    event.overlay.addListener("click", function () {
-                      alert('click')
-                    })
-
                   });
 
-                  debugger;
                   // setup drawingManager tool 
-                  if (rectangle != null || polygon != null || polysArray.length > 0) {
+                  if (polygon != null || polysArray.length > 0) {
 
                   }
                   else {
                     drawingManager.setMap(globalmap);
                   }
-                  // if (JSON.parse(localStorage.getItem('polygondrawn')) != undefined) {
-                  //   console.log(JSON.parse(localStorage.getItem('polygondrawn')))
-                  // }
                   loadMapState();
-
-
-                  if (rectangle != null) {
-                    drawingManager.setMap(null)
-                    rectangle.addListener("bounds_changed", function () {
-
-                      console.log('bound changed!');
-
-                      const ne = rectangle.getBounds().getNorthEast();
-                      const sw = rectangle.getBounds().getSouthWest();
-
-                      var mapZoom = globalmap.getZoom();
-                      var mapCenter = globalmap.getCenter();
-                      var mapLat = mapCenter.lat();
-                      var mapLng = mapCenter.lng();
-
-                      var point1 = { 'lat': ne.lat(), 'lng': ne.lng() }
-                      var point2 = { 'lat': sw.lat(), 'lng': sw.lng() }
-
-                      var extra = point1.lat + '_' + point1.lng + '_' + point2.lat + '_' + point2.lng;
-                      let cookieObject = {};
-                      cookieObject.type = 'rectangle';
-                      cookieObject.points = extra
-                      var cookiestring = mapLat + "|" + mapLng + "|" + mapZoom + "|" + JSON.stringify(cookieObject);
-                      document.getElementById('mapCoordinate').value = extra
-                      setCookie("myMapCookie", cookiestring, 30);
-                    });
-                  }
 
                   if (polygon != null) {
                     drawingManager.setMap(null)
@@ -487,7 +407,7 @@
                         cookieString += element.lat() + '_' + element.lng()
                       }
                       var copyCord = [...coordinatesArray];
-                      var mapCordinatepoints = getMapCordinateForPolygon(copyCord)
+                      var mapCordinatepoints = getMapCordinateForPolygon(copyCord, false)
                       document.getElementById('mapCoordinate').value = mapCordinatepoints
 
                       let cookieObject = {};
@@ -498,6 +418,8 @@
                       saveMapState(JSON.stringify(cookieObject))
                     })
                   }
+
+                  resultWithCoordinate()
                 }
 
                 document.getElementById("clear-map").addEventListener("click", function () {
@@ -509,33 +431,37 @@
                   drawingManager.setMap(globalmap);
                   // localStorage.removeItem('polygondrawn') 
                   clearCookie("myMapCookie");
-                  if (rectangle != null)
-                    rectangle.setMap(null);
                   if (polygon != null)
                     polygon.setMap(null)
                   document.getElementById('polyCoordinates').value = null
                   document.getElementById('mapCoordinate').value = null
                 });
 
-                function saveMapState(extra) {
+                function saveMapState(polygonCoordinateString) {
                   // const map = new google.maps.Map(document.getElementById("map"));
                   var mapZoom = globalmap.getZoom();
                   var mapCenter = globalmap.getCenter();
                   var mapLat = mapCenter.lat();
                   var mapLng = mapCenter.lng();
-                  var cookiestring = mapLat + "|" + mapLng + "|" + mapZoom + "|" + extra;
+                  var cookiestring = mapLat + "|" + mapLng + "|" + mapZoom + "|" + polygonCoordinateString;
                   setCookie("myMapCookie", cookiestring, 30);
                 }
 
-                function getMapCordinateForPolygon(polycordinatearray) {
+                function getMapCordinateForPolygon(polycordinatearray, staticPoint) {
                   const elementlat = [];
                   const elementlng = [];
                   for (let i = 0; i < polycordinatearray.length; i++) {
-                    elementlat[i] = polycordinatearray[i].lat();
-                    elementlng[i] = polycordinatearray[i].lng();
+                    if (staticPoint) {
+                      elementlat[i] = polycordinatearray[i].lat;
+                      elementlng[i] = polycordinatearray[i].lng;
+                    }
+                    else {
+                      elementlat[i] = polycordinatearray[i].lat();
+                      elementlng[i] = polycordinatearray[i].lng();
+                    }
                   }
-                  var elementLatSort = sortTest(elementlat);
-                  var elementLngSort = sortTest(elementlng);
+                  var elementLatSort = sortArray(elementlat);
+                  var elementLngSort = sortArray(elementlng);
 
                   const maxLat = elementLatSort[elementLatSort.length - 1];
                   const minLat = elementLatSort[0];
@@ -546,26 +472,7 @@
                   return cordinateString
                 }
 
-                function getCoordinateFromStaticPoints(polycordinatearray) {
-                  const elementlat = [];
-                  const elementlng = [];
-                  for (let i = 0; i < polycordinatearray.length; i++) {
-                    elementlat[i] = polycordinatearray[i].lat;
-                    elementlng[i] = polycordinatearray[i].lng;
-                  }
-                  var elementLatSort = sortTest(elementlat);
-                  var elementLngSort = sortTest(elementlng);
-
-                  const maxLat = elementLatSort[elementLatSort.length - 1];
-                  const minLat = elementLatSort[0];
-
-                  const maxLng = elementLngSort[elementLngSort.length - 1];
-                  const minLng = elementLngSort[0];
-                  var cordinateString = maxLat + '_' + maxLng + '_' + minLat + '_' + minLng
-                  return cordinateString
-                }
-
-                function sortTest(arr) {
+                function sortArray(arr) {
                   var len = arr.length;
                   for (var i = 0; i < len - 1; i++) {
                     for (var j = 0; j < len - 1 - i; j++) {
@@ -587,35 +494,7 @@
                     var savedMapLng = parseFloat(splitStr[1]);
                     var savedMapZoom = parseFloat(splitStr[2]);
                     var polyDetail = JSON.parse(splitStr[3])
-                    if (polyDetail.type == 'rectangle') {
-                      let recBounds = polyDetail.points;
-                      let boundsplit = recBounds.split("_")
-                      const northeast = {}
-                      const southwest = {}
-                      northeast.lat = parseFloat(boundsplit[0]);
-                      northeast.lng = parseFloat(boundsplit[1]);
-                      southwest.lat = parseFloat(boundsplit[2]);
-                      southwest.lng = parseFloat(boundsplit[3]);
-                      document.getElementById('mapCoordinate').value = recBounds
-                      if ((!isNaN(savedMapLat)) && (!isNaN(savedMapLng)) && (!isNaN(savedMapZoom)) &&
-                        (!isNaN(northeast.lat)) && (!isNaN(northeast.lng)) && (!isNaN(southwest.lat)) && (!isNaN(southwest.lng))) {
-                        globalmap.setCenter(new google.maps.LatLng(savedMapLat, savedMapLng));
-                        globalmap.setZoom(savedMapZoom);
-
-                        rectangle = new google.maps.Rectangle({
-                          editable: true,
-                          draggable: true
-                        })
-                        rectangle.setBounds({
-                          north: northeast.lat,
-                          south: southwest.lat,
-                          west: southwest.lng,
-                          east: northeast.lng
-                        })
-                        rectangle.setMap(globalmap)
-                      }
-                    }
-                    else if (polyDetail.type == 'polygon') {
+                    if (polyDetail.type == 'polygon') {
                       let polyBounds = polyDetail.points;
                       let boundsplit = polyBounds.split("_")
                       let polygonbounds = []
@@ -623,7 +502,7 @@
                         polygonbounds.push({ lat: parseFloat(boundsplit[i]), lng: parseFloat(boundsplit[i + 1]) });
                       }
                       var copyCord = [...polygonbounds];
-                      var mapCordinatepoints = getCoordinateFromStaticPoints(copyCord)
+                      var mapCordinatepoints = getMapCordinateForPolygon(copyCord, true)
                       document.getElementById('mapCoordinate').value = mapCordinatepoints
                       document.getElementById('polyCoordinates').value = polyBounds
                       polygon = new google.maps.Polygon({
@@ -663,18 +542,11 @@
                 }
 
                 function resultWithCoordinate() {
-                  // Counting for results with longtitude and latitude. 
-                  var count = 0;
-                  // Counting for all results for been searched.
-                  var sumResult = 0;
-                  //Counting for longtitude and latitude of the results that are not a number.
-                  var countNaN = 0;
 
-                  // console.log(myLatLng1.lat);
-                  // const searchRows1 = document.querySelectorAll(myLatLng1);
-                  // console.log(searchRows1);
+                  var count = 0;                 // Counting for results with longtitude and latitude. 
+                  var sumResult = 0;                  // Counting for all results for been searched.
+                  var countNaN = 0;                  //Counting for longtitude and latitude of the results that are not a number.
 
-                  //Get the result from the database.
                   const searchRows = document.querySelectorAll('.search-result-set .search-data-row')
                   // console.log(searchRows)
 
@@ -682,25 +554,18 @@
                   var markArray = []
                   //Loop every results in the searchRows and find lattitude and longitude for each results.
                   searchRows.forEach(term => {
-                    //Declare lat1 and long1 to store lattitude and longitude from dataset
                     var lat1 = term.querySelector('.dec-lat').innerHTML;
                     var long1 = term.querySelector('.dec-long').innerHTML;
 
-                    //Convert lat1 and long1 to become float format.
                     var latFloat = parseFloat(lat1);
                     var longFloat = parseFloat(long1);
 
-                    // console.log(latFloat);
-                    //Check for lattitude and longitude for all the results and find that are not a number.  
-                    if (isNaN(latFloat) || isNaN(longFloat)) {
-                      //Counting for result that is not a number.
-                      console.log("Has NaN");
-                      countNaN++;
-                    } else {
-                      //Counting for result that are number.
-                      count++;
 
-                      //Use nmark to save the pair of longitude and latitude of the result.
+                    if (isNaN(latFloat) || isNaN(longFloat)) {                    //Check for lattitude and longitude for all the results and find that are not a number.  
+                      countNaN++;
+                    }
+                    else {
+                      count++;
                       let nmark = new google.maps.Marker({
                         position: { 'lat': latFloat, 'lng': longFloat },
                         globalmap
@@ -710,9 +575,9 @@
                     }
 
                     sumResult++;
-                    //////////////Find decimal lattitude longitude
                   })
-                  // add cluster optopm
+
+                  // Enable marker clustering for this map and these markers
                   const clusterOptions = {
 
                     imagePath: "https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m",
@@ -721,19 +586,15 @@
                     maxZoom: 10,
                   };
 
-                  // Enable marker clustering for this map and these markers
                   const markerClusterer = new MarkerClusterer(globalmap, markArray, clusterOptions);
-                  //new MarkerClusterer({ markers, map });
-                  // infowindow = new google.maps.InfoWindow({
-                  //   content: " "
-                  // })
 
-                  //  console.log(count);
                   if (document.getElementById('resultCoordinate'))
-                    document.getElementById('resultCoordinate').innerHTML = 'Displaying location of ' + count + ' unique records out of ' + sumResult + ' records in total !'
+                    document.getElementById('resultCoordinate').innerHTML = 'Displaying location of ' + count + ' unique records out of ' + sumResult + ' unique records in total !'
                 }
               </script>
+
               <script>
+                // clear the cache when we go to any other page
                 var list = document.getElementsByClassName("dropdown-item-cache-clear");
                 for (var i in list) {
                   list[i].onclick = clearCache;
@@ -745,8 +606,6 @@
                       element.setMap(null);
                     });
                   }
-                  // localStorage.removeItem('polygondrawn') 
                   clearCookie("myMapCookie");
-                  rectangle.setMap(null);
                 }
               </script>
