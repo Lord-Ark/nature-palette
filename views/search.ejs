@@ -285,9 +285,19 @@
                   }
                 }
               </script>
-              <script
-                src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&callback=initMap&&libraries=drawing&v=weekly&channel=2"
-                async></script>
+              <script>
+                  var GOOGLE_MAP_KEY = "AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg";
+                  
+                  function loadScript() {
+                    var script = document.createElement('script');
+                    script.type = 'text/javascript';
+                    script.src = 'https://maps.googleapis.com/maps/api/js?' +
+                        '&key=' + GOOGLE_MAP_KEY +'&callback=initMap&&libraries=drawing&v=weekly&channel=2'; //& needed
+                    document.body.appendChild(script);
+                  }
+                  
+                  window.onload = loadScript;
+              </script>
               <script>
                 var polysArray = [];
                 var globalmap;
