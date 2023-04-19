@@ -24,7 +24,7 @@
     "jquery-form": "^4.3.0",
     "json2csv": "^4.5.4",
     "lodash": "^4.17.20",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "mongoose": "^5.7.7",
     "morgan": "~1.9.1",
     "node-geometry-library": "^1.2.5",
