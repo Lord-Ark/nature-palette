@@ -72,9 +72,11 @@ app.use(function(err, req, res, next) {
 
 module.exports = app;
 
-// Initial Config
-const port = process.env.PORT || 8080;
+if (require.main === module) {
+  // Initial Config
+  const port = process.env.PORT || 8080;
 
-// Server
-var server = app.listen(port, () => console.log(`Listening on port ${port}`));
-server.setTimeout(500000);
+  // Server
+  var server = app.listen(port, () => console.log(`Listening on port ${port}`));
+  server.setTimeout(500000);
+}
