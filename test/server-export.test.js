@@ -41,3 +41,15 @@ assert.strictEqual(
   true,
   'multipart POST requests with a body should remain eligible'
 );
+
+assert.strictEqual(
+  isEligibleRequest({
+    method: 'POST',
+    headers: {
+      'content-length': '12',
+      'content-type': 'multipart/form-data ; boundary=abc123'
+    }
+  }),
+  true,
+  'multipart headers with optional whitespace before parameters should remain eligible'
+);
