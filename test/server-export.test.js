@@ -53,3 +53,27 @@ assert.strictEqual(
   true,
   'multipart headers with optional whitespace before parameters should remain eligible'
 );
+
+assert.strictEqual(
+  isEligibleRequest({
+    method: 'POST',
+    headers: {
+      'content-length': '12',
+      'content-type': 'multipart/form-data'
+    }
+  }),
+  false,
+  'multipart requests without a boundary should be skipped before upload parsing'
+);
+
+assert.strictEqual(
+  isEligibleRequest({
+    method: 'POST',
+    headers: {
+      'content-length': '12',
+      'content-type': 'multipart/form-data; charset=utf-8; boundary=\"abc123\"'
+    }
+  }),
+  true,
+  'multipart requests with quoted boundaries should remain eligible'
+);
