@@ -77,3 +77,15 @@ assert.strictEqual(
   true,
   'multipart requests with quoted boundaries should remain eligible'
 );
+
+assert.strictEqual(
+  isEligibleRequest({
+    method: 'get',
+    headers: {
+      'content-length': '12',
+      'content-type': 'multipart/form-data; boundary=abc123'
+    }
+  }),
+  false,
+  'multipart GET requests should be rejected regardless of method casing'
+);
