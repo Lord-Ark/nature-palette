@@ -46,6 +46,30 @@ assert.strictEqual(
   isEligibleRequest({
     method: 'POST',
     headers: {
+      'content-length': '0 ',
+      'content-type': 'multipart/form-data; boundary=abc123'
+    }
+  }),
+  false,
+  'multipart requests with a zero content-length should be skipped even with trailing whitespace'
+);
+
+assert.strictEqual(
+  isEligibleRequest({
+    method: 'POST',
+    headers: {
+      'transfer-encoding': '',
+      'content-type': 'multipart/form-data; boundary=abc123'
+    }
+  }),
+  false,
+  'multipart requests without a meaningful transfer-encoding value should be skipped safely'
+);
+
+assert.strictEqual(
+  isEligibleRequest({
+    method: 'POST',
+    headers: {
       'content-length': '12',
       'content-type': 'multipart/form-data ; boundary=abc123'
     }
