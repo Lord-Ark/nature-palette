@@ -46,6 +46,18 @@ assert.strictEqual(
   isEligibleRequest({
     method: 'POST',
     headers: {
+      'content-length': ['12'],
+      'content-type': ['multipart/form-data; boundary=abc123']
+    }
+  }),
+  true,
+  'multipart requests with array header values should remain eligible'
+);
+
+assert.strictEqual(
+  isEligibleRequest({
+    method: 'POST',
+    headers: {
       'content-length': '0 ',
       'content-type': 'multipart/form-data; boundary=abc123'
     }
@@ -64,6 +76,18 @@ assert.strictEqual(
   }),
   false,
   'multipart requests without a meaningful transfer-encoding value should be skipped safely'
+);
+
+assert.strictEqual(
+  isEligibleRequest({
+    method: 'POST',
+    headers: {
+      'transfer-encoding': ['', 'chunked'],
+      'content-type': ['text/plain', 'multipart/form-data; boundary=abc123']
+    }
+  }),
+  true,
+  'multipart requests should accept meaningful values from repeated header arrays'
 );
 
 assert.strictEqual(
