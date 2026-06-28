@@ -21,6 +21,14 @@ assert.match(
 
 assert.strictEqual(
   isEligibleRequest({
+    method: 'POST'
+  }),
+  false,
+  'requests without a headers object should be skipped safely'
+);
+
+assert.strictEqual(
+  isEligibleRequest({
     method: 'POST',
     headers: {
       'content-length': '12'
