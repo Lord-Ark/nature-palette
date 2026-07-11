@@ -2,6 +2,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const isEligibleRequest = require('../lib/isEligibleRequest');
+const { uriDecodeFileName } = require('../lib/utilities');
 
 const repoDir = path.resolve(__dirname, '..');
 const serverSource = fs.readFileSync(path.join(repoDir, 'server.js'), 'utf8');
@@ -144,4 +145,30 @@ assert.strictEqual(
   }),
   false,
   'multipart GET requests should be rejected regardless of method casing'
+);
+
+assert.strictEqual(
+  uriDecodeFileName(
+    { uriDecodeFileNames: true },
+    'field%20notes.csv'
+  ),
+  'field notes.csv',
+  'valid URI-encoded filenames should still be decoded'
+);
+
+assert.doesNotThrow(
+  () => uriDecodeFileName(
+    { uriDecodeFileNames: true },
+    'field%2-notes.csv'
+  ),
+  'malformed URI-encoded filenames should not crash request processing'
+);
+
+assert.strictEqual(
+  uriDecodeFileName(
+    { uriDecodeFileNames: true },
+    'field%2-notes.csv'
+  ),
+  'field%2-notes.csv',
+  'malformed URI-encoded filenames should fall back to the original filename'
 );
