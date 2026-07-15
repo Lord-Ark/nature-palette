@@ -1,6 +1,8 @@
 const assert = require('assert');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
+const Module = require('module');
 const isEligibleRequest = require('../lib/isEligibleRequest');
 const { uriDecodeFileName } = require('../lib/utilities');
 
@@ -171,4 +173,76 @@ assert.strictEqual(
   ),
   'field%2-notes.csv',
   'malformed URI-encoded filenames should fall back to the original filename'
+);
+
+const stubsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nature-palette-stubs-'));
+const expressStubDir = path.join(stubsDir, 'express');
+fs.mkdirSync(expressStubDir);
+fs.writeFileSync(
+  path.join(expressStubDir, 'index.js'),
+  'module.exports = function express() { return {}; };'
+);
+
+const originalNodePath = process.env.NODE_PATH || '';
+const nodePathEntries = originalNodePath ? `${stubsDir}${path.delimiter}${originalNodePath}` : stubsDir;
+process.env.NODE_PATH = nodePathEntries;
+Module._initPaths();
+
+const verificationHelper = require('../helpers/dataVerificationModified');
+const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nature-palette-meta-'));
+
+const blankFilenameMetaFile = path.join(tempDir, 'blank-filename.csv');
+fs.writeFileSync(
+  blankFilenameMetaFile,
+  [
+    'filename,datasource,uniqueid,genus,specificepithet,patch,lightangle1,lightangle2,probeangle1,probeangle2,replicate',
+    ',F,U1,Genus,species,patch,1,2,3,4,1'
+  ].join('\n')
+);
+
+const rowError = {};
+let rowResult;
+assert.doesNotThrow(
+  () => {
+    rowResult = verificationHelper.verifyAndGetMetaDataRows(blankFilenameMetaFile, rowError);
+  },
+  'blank filename metadata rows should return a validation error instead of throwing'
+);
+assert.strictEqual(
+  rowResult,
+  false,
+  'blank filename metadata rows should fail validation'
+);
+assert.match(
+  rowError.details,
+  /filename in line\s*:?\s*2/i,
+  'blank filename validation should identify the affected row'
+);
+
+const blankFilenameModifyMetaFile = path.join(tempDir, 'blank-filename-modify.csv');
+fs.writeFileSync(
+  blankFilenameModifyMetaFile,
+  [
+    'oldfilename,filename,datasource,uniqueid,institutioncode,cataloguenumber,genus,specificepithet,patch,lightangle1,lightangle2,probeangle1,probeangle2,replicate',
+    'old.csv,,F,U1,INST,1,Genus,species,patch,1,2,3,4,1'
+  ].join('\n')
+);
+
+const modifyError = {};
+let modifyResult;
+assert.doesNotThrow(
+  () => {
+    modifyResult = verificationHelper.modifyVerifyAndGetMetaDataRows(blankFilenameModifyMetaFile, modifyError);
+  },
+  'blank filename modification rows should return a validation error instead of throwing'
+);
+assert.strictEqual(
+  modifyResult,
+  false,
+  'blank filename modification rows should fail validation'
+);
+assert.match(
+  modifyError.details,
+  /filename in line\s*:?\s*2/i,
+  'blank filename modification validation should identify the affected row'
 );

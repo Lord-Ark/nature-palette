@@ -197,7 +197,6 @@ exports.verifyAndGetMetaDataRows = function (metaFileUrl,err) {
     return false;
   }
   var headers = lines[0].toString().split(',');
-  console.log(headers)
   if(lines.length<2){
     err.details = "Meta File Error, file has no contents other than header!";
     return false;
@@ -211,9 +210,7 @@ exports.verifyAndGetMetaDataRows = function (metaFileUrl,err) {
   metaDataField= "F"
   metaDataMuseum= "M"
   var requiredFieldsIndicesField = getRequiredFieldsColumnsIndicesField(lines[0],metaDataField);
-  console.log(requiredFieldsIndicesField)
   var requiredFieldsIndicesMuseum = getRequiredFieldsColumnsIndicesMuseum(lines[0], metaDataMuseum);
-  console.log(requiredFieldsIndicesMuseum)
   
   metaDataRows = [];
   rawFileNames = [];
@@ -230,7 +227,7 @@ exports.verifyAndGetMetaDataRows = function (metaFileUrl,err) {
         missingDataSource.push(headers[dataSourceIndex] + " in line : " + z)
 
     }else{
-        var dataSource = values[dataSourceIndex].trim();
+        var dataSource = getTrimmedColumnValue(values, dataSourceIndex);
         //console.log(dataSource)
         if(dataSource == "M"){
           // make sure all required field are present
@@ -240,7 +237,7 @@ exports.verifyAndGetMetaDataRows = function (metaFileUrl,err) {
                   contentError.push(y + " ");
                   break;
               } else{
-              var requiredMuseumValue = values[requiredMuseumIndex].trim();
+              var requiredMuseumValue = getTrimmedColumnValue(values, requiredMuseumIndex);
                   if( requiredMuseumValue == null || requiredMuseumValue == ""){
                       var x= i + 1;
                       missingValue.push(headers[requiredMuseumIndex] + " in line : " + x);
@@ -257,7 +254,7 @@ exports.verifyAndGetMetaDataRows = function (metaFileUrl,err) {
                     contentError.push(y + " ");
                     break;
                 } else{
-                var requiredFieldValue = values[requiredFieldIndex].trim();
+                var requiredFieldValue = getTrimmedColumnValue(values, requiredFieldIndex);
                     if( requiredFieldValue == null || requiredFieldValue == ""){
                         var x= i + 1;
                         missingValue.push(headers[requiredFieldIndex] + " in line  : " + x);
@@ -277,8 +274,10 @@ exports.verifyAndGetMetaDataRows = function (metaFileUrl,err) {
     metaDataRows.push(metaDataRow);
 
     // add filename of this row into file names list  
-    var fileName = values[fileNameColIndex].trim();
-    rawFileNames.push(fileName);
+    var fileName = getTrimmedColumnValue(values, fileNameColIndex);
+    if (fileName !== "") {
+      rawFileNames.push(fileName);
+    }
   }
   var error = "";
   var error1= "";
@@ -300,7 +299,6 @@ exports.verifyAndGetMetaDataRows = function (metaFileUrl,err) {
       error3= 'Meta File Error, no value found for DataSource column';
     }
     err.details = error +'\n\n'+ error1 +'\n\n'+ error2+'\n\n'+ error3;
-    console.log(err.details);
     return false;
   }
   return metaDataRows;
@@ -327,6 +325,7 @@ exports.modifyVerifyAndGetMetaDataRows = function (metaFileUrl,err) {
   metaDataRows = [];
   rawFileNames = [];
   duplication = [];
+  var missingFileName = [];
 
   for(var i =1;i<lines.length;i++){
     var values = lines[i].toString().split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/g);
@@ -341,11 +340,21 @@ exports.modifyVerifyAndGetMetaDataRows = function (metaFileUrl,err) {
     metaDataRows.push(metaDataRow);
 
     // add filename of this row into file names list  
-    var fileName = values[fileNameColIndex].trim();
+    var fileName = getTrimmedColumnValue(values, fileNameColIndex);
+    if (fileName === "") {
+      var x = i + 1;
+      missingFileName.push(headers[fileNameColIndex] + " in line : " + x);
+      continue;
+    }
+
     rawFileNames.push(fileName);
   }
+    if(missingFileName.length > 0){
+      err.details = 'Meta File Error, no value found for required field ' + missingFileName.join();
+      return false;
+    }
     if(arrayHasDuplication(rawFileNames, err)){
-      err = ' Meta File Error, raw file name duplication: ' + err.details;
+      err.details = ' Meta File Error, raw file name duplication: ' + err.details;
       return false;
     }
   return metaDataRows;
@@ -450,6 +459,16 @@ getRawFileNameColumnIndex = function (metaFileHeaderLine) {
   return metaFileHeaderFields.findIndex(x=>x=="filename");
 }
 
+getTrimmedColumnValue = function(values, index) {
+  var value = values[index];
+
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  return value.trim();
+}
+
 arrayHasDuplication = function(array,err) {
   var alreadySeen = [];
 
@@ -498,4 +517,3 @@ arrayHasDuplication = function(array,err) {
 //   }
 //   return reference_header_fields;
 // }
-
