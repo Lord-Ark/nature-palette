@@ -246,3 +246,56 @@ assert.match(
   /filename in line\s*:?\s*2/i,
   'blank filename modification validation should identify the affected row'
 );
+
+const spacedFilenameMetaFile = path.join(tempDir, 'spaced-filename.csv');
+fs.writeFileSync(
+  spacedFilenameMetaFile,
+  [
+    'filename,datasource,uniqueid,genus,specificepithet,patch,lightangle1,lightangle2,probeangle1,probeangle2,replicate',
+    '  field-notes.csv  ,F,U1,Genus,species,patch,1,2,3,4,1'
+  ].join('\n')
+);
+
+const spacedFilenameError = {};
+const spacedFilenameRows = verificationHelper.verifyAndGetMetaDataRows(
+  spacedFilenameMetaFile,
+  spacedFilenameError
+);
+assert.ok(
+  Array.isArray(spacedFilenameRows),
+  'new submission metadata with padded filenames should still validate'
+);
+assert.strictEqual(
+  spacedFilenameRows[0].filename,
+  'field-notes.csv',
+  'new submission metadata should trim filename values before saving'
+);
+
+const spacedModifyMetaFile = path.join(tempDir, 'spaced-filename-modify.csv');
+fs.writeFileSync(
+  spacedModifyMetaFile,
+  [
+    'oldfilename,filename,datasource,uniqueid,institutioncode,cataloguenumber,genus,specificepithet,patch,lightangle1,lightangle2,probeangle1,probeangle2,replicate',
+    '  old.csv  ,  new.csv  ,F,U1,INST,1,Genus,species,patch,1,2,3,4,1'
+  ].join('\n')
+);
+
+const spacedModifyError = {};
+const spacedModifyRows = verificationHelper.modifyVerifyAndGetMetaDataRows(
+  spacedModifyMetaFile,
+  spacedModifyError
+);
+assert.ok(
+  Array.isArray(spacedModifyRows),
+  'modification metadata with padded filenames should still validate'
+);
+assert.strictEqual(
+  spacedModifyRows[0].oldfilename,
+  'old.csv',
+  'modification metadata should trim oldfilename values before branching on them'
+);
+assert.strictEqual(
+  spacedModifyRows[0].filename,
+  'new.csv',
+  'modification metadata should trim filename values before saving'
+);

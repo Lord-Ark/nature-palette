@@ -267,7 +267,10 @@ exports.verifyAndGetMetaDataRows = function (metaFileUrl,err) {
     // extract values of this row into an object
     var metaDataRow = {};
     headers.forEach(function(element,index) {
-      metaDataRow[element.toLowerCase().trim()]  = values[index];      
+      var normalizedHeader = element.toLowerCase().trim();
+      metaDataRow[normalizedHeader] = normalizedHeader === 'filename'
+        ? getTrimmedColumnValue(values, index)
+        : values[index];
     });
 
     // add this row to list of rows 
@@ -333,7 +336,12 @@ exports.modifyVerifyAndGetMetaDataRows = function (metaFileUrl,err) {
     // extract values of this row into an object
     var metaDataRow = {};
     headers.forEach(function(element,index) {
-      metaDataRow[element.toLowerCase().trim()]  = values[index];      
+      var normalizedHeader = element.toLowerCase().trim();
+      metaDataRow[normalizedHeader] = (
+        normalizedHeader === 'filename' || normalizedHeader === 'oldfilename'
+      )
+        ? getTrimmedColumnValue(values, index)
+        : values[index];
     });
 
     // add this row to list of rows 
