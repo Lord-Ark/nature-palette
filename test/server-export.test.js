@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const Module = require('module');
 const isEligibleRequest = require('../lib/isEligibleRequest');
+const tempFileHandler = require('../lib/tempFileHandler');
 const { uriDecodeFileName } = require('../lib/utilities');
 
 const repoDir = path.resolve(__dirname, '..');
@@ -218,6 +219,37 @@ assert.match(
   /filename in line\s*:?\s*2/i,
   'blank filename validation should identify the affected row'
 );
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+(async () => {
+  const uploadHandler = tempFileHandler({ tempFileDir: os.tmpdir() }, 'dataset', 'sample.csv');
+  uploadHandler.dataHandler(Buffer.from('value'));
+  uploadHandler.complete();
+
+  const tempFilePath = uploadHandler.getFilePath();
+  await wait(50);
+  fs.unlinkSync(tempFilePath);
+
+  let uncaughtCleanupError = null;
+  const onUncaughtException = (error) => {
+    uncaughtCleanupError = error;
+  };
+
+  process.once('uncaughtException', onUncaughtException);
+  uploadHandler.cleanup();
+  await wait(50);
+  process.removeListener('uncaughtException', onUncaughtException);
+
+  assert.strictEqual(
+    uncaughtCleanupError,
+    null,
+    'cleanup should ignore missing temp files instead of crashing the process'
+  );
+})().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
 
 const blankFilenameModifyMetaFile = path.join(tempDir, 'blank-filename-modify.csv');
 fs.writeFileSync(
