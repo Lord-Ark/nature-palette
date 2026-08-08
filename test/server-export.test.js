@@ -5,7 +5,7 @@ const path = require('path');
 const Module = require('module');
 const isEligibleRequest = require('../lib/isEligibleRequest');
 const tempFileHandler = require('../lib/tempFileHandler');
-const { uriDecodeFileName } = require('../lib/utilities');
+const { parseFileName, uriDecodeFileName } = require('../lib/utilities');
 
 const repoDir = path.resolve(__dirname, '..');
 const serverSource = fs.readFileSync(path.join(repoDir, 'server.js'), 'utf8');
@@ -174,6 +174,23 @@ assert.strictEqual(
   ),
   'field%2-notes.csv',
   'malformed URI-encoded filenames should fall back to the original filename'
+);
+
+assert.doesNotThrow(
+  () => parseFileName(
+    { safeFileNames: true, preserveExtension: true },
+    undefined
+  ),
+  'safe filename parsing should skip missing multipart filenames without throwing'
+);
+
+assert.strictEqual(
+  parseFileName(
+    { safeFileNames: true, preserveExtension: true },
+    undefined
+  ),
+  undefined,
+  'safe filename parsing should preserve missing multipart filenames'
 );
 
 const stubsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nature-palette-stubs-'));
