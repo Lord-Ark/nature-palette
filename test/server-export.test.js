@@ -209,6 +209,26 @@ Module._initPaths();
 const verificationHelper = require('../helpers/dataVerificationModified');
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nature-palette-meta-'));
 
+const uploadValidationError = {};
+assert.strictEqual(
+  verificationHelper.verifyUploadRequest(
+    {
+      files: {
+        rawFile: { name: 'SPECIMENS.ZIP' },
+        metaFile: { name: 'metadata.CsV' }
+      }
+    },
+    uploadValidationError
+  ),
+  true,
+  'upload validation should accept supported file extensions regardless of case'
+);
+assert.strictEqual(
+  uploadValidationError.details,
+  '',
+  'successful upload validation should leave the error details empty'
+);
+
 const blankFilenameMetaFile = path.join(tempDir, 'blank-filename.csv');
 fs.writeFileSync(
   blankFilenameMetaFile,

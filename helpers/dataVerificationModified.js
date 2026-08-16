@@ -98,6 +98,8 @@ const reflectance_museum_header_fields = [
   
 
 exports.verifyUploadRequest = function(req,err) {
+  err.details = "";
+
   // verify request has exactly 3 files
   if (!req.files) //|| Object.keys(req.files).length != 3) 
   {
@@ -105,12 +107,19 @@ exports.verifyUploadRequest = function(req,err) {
     return false;
   }
 
+  const rawFileExtension = req.files.rawFile && typeof req.files.rawFile.name === 'string'
+    ? path.extname(req.files.rawFile.name).toLowerCase()
+    : '';
+  const metaFileExtension = req.files.metaFile && typeof req.files.metaFile.name === 'string'
+    ? path.extname(req.files.metaFile.name).toLowerCase()
+    : '';
+
   // verify request has rawFile, metaFile, Readme files with correct file types
-  if (!req.files.rawFile || path.extname(req.files.rawFile.name) != '.zip') {
+  if (!req.files.rawFile || rawFileExtension != '.zip') {
   	err.details = "Raw file is missing or selected file type is not supported!"
     return false;
   }
-  if (!req.files.metaFile || path.extname(req.files.metaFile.name) != '.csv'  ) {
+  if (!req.files.metaFile || metaFileExtension != '.csv'  ) {
   	err.details = "Metadata file is missing or selected file type is not supported!"
     return false;
   }
