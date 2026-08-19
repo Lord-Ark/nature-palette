@@ -6,6 +6,7 @@ const Module = require('module');
 const isEligibleRequest = require('../lib/isEligibleRequest');
 const tempFileHandler = require('../lib/tempFileHandler');
 const { parseFileName, uriDecodeFileName } = require('../lib/utilities');
+const uploadHelper = require('../helpers/uploadHelper');
 
 const repoDir = path.resolve(__dirname, '..');
 const serverSource = fs.readFileSync(path.join(repoDir, 'server.js'), 'utf8');
@@ -191,6 +192,48 @@ assert.strictEqual(
   ),
   undefined,
   'safe filename parsing should preserve missing multipart filenames'
+);
+
+for (const suspiciousName of [
+  '../../metadata.csv',
+  '..\\\\..\\\\specimens.zip',
+  'nested\\\\folder/notes.txt'
+]) {
+  let movedPath;
+  const savedPath = uploadHelper.uploadFileToServer(
+    {
+      name: suspiciousName,
+      mv: (targetPath) => {
+        movedPath = targetPath;
+      }
+    },
+    () => {}
+  );
+
+  assert.strictEqual(
+    path.dirname(savedPath),
+    path.join(repoDir, 'uploads'),
+    'uploaded files should always be stored under the uploads directory'
+  );
+  assert.strictEqual(
+    savedPath,
+    movedPath,
+    'upload helper should move files to the same path it reports back to callers'
+  );
+}
+
+assert.strictEqual(
+  path.basename(
+    uploadHelper.uploadFileToServer(
+      {
+        name: '..\\\\nested/metadata.csv',
+        mv: () => {}
+      },
+      () => {}
+    )
+  ),
+  'metadata.csv',
+  'upload helper should strip client-supplied path segments from stored filenames'
 );
 
 const stubsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nature-palette-stubs-'));
