@@ -236,6 +236,64 @@ assert.strictEqual(
   'upload helper should strip client-supplied path segments from stored filenames'
 );
 
+const loadSearchSubmissionController = () => {
+  const filename = path.join(repoDir, 'controllers', 'searchSubmissionController.js');
+  const controllerSource = fs.readFileSync(filename, 'utf8');
+  const controllerModule = new Module(filename, module);
+  const originalRequire = controllerModule.require.bind(controllerModule);
+
+  controllerModule.filename = filename;
+  controllerModule.paths = Module._nodeModulePaths(path.dirname(filename));
+  controllerModule.require = (request) => {
+    if (request === 'express') {
+      return () => ({});
+    }
+    if (request === 'moment') {
+      return {};
+    }
+    if (request === 'mongoose') {
+      return { Types: { ObjectId: () => 'search-result-id' } };
+    }
+    if (request === 'uuid/v1') {
+      return () => 'uuid-value';
+    }
+    if (request === 'json2csv') {
+      return { Parser: function Parser() {} };
+    }
+    if (request === '../helpers/zipHelper') {
+      return { zip: () => 'downloads/test.zip' };
+    }
+    if (request.startsWith('../models/')) {
+      return {};
+    }
+    return originalRequire(request);
+  };
+
+  controllerModule._compile(controllerSource, filename);
+  return controllerModule.exports;
+};
+
+const searchSubmissionController = loadSearchSubmissionController();
+
+searchSubmissionController.extractSearchQueryFromReq({
+  name: '  Jane Doe  ',
+  institute: '  Herbarium  ',
+  submissionId: '  SUB-42  '
+}).then((query) => {
+  assert.deepStrictEqual(
+    query,
+    {
+      name: 'Jane Doe',
+      institute: 'Herbarium',
+      submissionId: 'SUB-42'
+    },
+    'submission search query extraction should trim the supported text fields'
+  );
+}).catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
+
 const stubsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nature-palette-stubs-'));
 const expressStubDir = path.join(stubsDir, 'express');
 fs.mkdirSync(expressStubDir);

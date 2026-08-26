@@ -220,7 +220,7 @@ async function extractSearchQueryFromReq(reqBody) {
 
   if (reqBody.name) {
     let name = reqBody.name;
-    query.name = name.trime();
+    query.name = name.trim();
   }
   if (reqBody.institute) {
     let institute = reqBody.institute;
@@ -245,6 +245,8 @@ async function extractSearchQueryFromReq(reqBody) {
 
   return query;
 }
+
+exports.extractSearchQueryFromReq = extractSearchQueryFromReq;
 
 function getSearchTermsFor(reqBody,field){
   return reqBody[field] == null || reqBody[field] == "" ? null : reqBody[field];
