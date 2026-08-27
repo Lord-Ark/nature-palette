@@ -37,7 +37,16 @@ exports.getSearchTerms = function(req, res) {
 
 // edit search term
 exports.editSearchTerm = function(req, res) {
-  getSearchTerm(req.body.Id).then( function (searchTerm) {
+  return getSearchTerm(req.body.Id).then( function (searchTerm) {
+    if (searchTerm == null) {
+      return getSearchTerms().then(function (searchTermList) {
+        res.render('searchTerms', {
+          searchTerms: searchTermList,
+          error: 'Search Term Not Found!',
+          user: req.user
+        });
+      });
+    }
     
     if(typeof searchTerm != undefined && searchTerm != null){
       searchTerm.Placeholder = req.body.Placeholder;  
@@ -59,7 +68,16 @@ exports.editSearchTerm = function(req, res) {
 };
 // Delete search term
 exports.deleteSearchTerm = function(req, res) {
-  getSearchTerm(req.body.Id).then( function (searchTerm) {
+  return getSearchTerm(req.body.Id).then( function (searchTerm) {
+    if (searchTerm == null) {
+      return getSearchTerms().then(function (searchTermList) {
+        res.render('searchTerms', {
+          searchTerms: searchTermList,
+          error: 'Search Term Not Found!',
+          user: req.user
+        });
+      });
+    }
     
     //if(typeof searchTerm != undefined && searchTerm != null){
     //searchTerm.Placeholder = req.body.Placeholder;  

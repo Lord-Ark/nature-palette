@@ -294,6 +294,91 @@ searchSubmissionController.extractSearchQueryFromReq({
   process.exit(1);
 });
 
+const loadSearchTermsController = (searchTermModel) => {
+  const filename = path.join(repoDir, 'controllers', 'searchtermscontroller.js');
+  const controllerSource = fs.readFileSync(filename, 'utf8');
+  const controllerModule = new Module(filename, module);
+  const originalRequire = controllerModule.require.bind(controllerModule);
+
+  controllerModule.filename = filename;
+  controllerModule.paths = Module._nodeModulePaths(path.dirname(filename));
+  controllerModule.require = (request) => {
+    if (request === 'express') {
+      return () => ({});
+    }
+    if (request === 'moment') {
+      return {};
+    }
+    if (request === 'mongoose') {
+      return {};
+    }
+    if (request === '../models/SearchTermModel') {
+      return searchTermModel;
+    }
+    return originalRequire(request);
+  };
+
+  controllerModule._compile(controllerSource, filename);
+  return controllerModule.exports;
+};
+
+(async () => {
+  const renderedViews = [];
+  const controller = loadSearchTermsController({
+    find: async () => [{ Name: 'color', Enabled: true }],
+    findOne: async () => null,
+    create: () => {}
+  });
+
+  const res = {
+    render: (view, locals) => {
+      renderedViews.push({ view, locals });
+    }
+  };
+
+  await controller.editSearchTerm(
+    {
+      body: { Id: 'missing-id', Placeholder: 'unused' },
+      user: { id: 'user-1' }
+    },
+    res
+  );
+
+  await controller.deleteSearchTerm(
+    {
+      body: { Id: 'missing-id' },
+      user: { id: 'user-1' }
+    },
+    res
+  );
+
+  assert.deepStrictEqual(
+    renderedViews,
+    [
+      {
+        view: 'searchTerms',
+        locals: {
+          searchTerms: [{ Name: 'color', Enabled: true }],
+          error: 'Search Term Not Found!',
+          user: { id: 'user-1' }
+        }
+      },
+      {
+        view: 'searchTerms',
+        locals: {
+          searchTerms: [{ Name: 'color', Enabled: true }],
+          error: 'Search Term Not Found!',
+          user: { id: 'user-1' }
+        }
+      }
+    ],
+    'missing search-term edits and deletes should render a recoverable error state'
+  );
+})().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
+
 const stubsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nature-palette-stubs-'));
 const expressStubDir = path.join(stubsDir, 'express');
 fs.mkdirSync(expressStubDir);
