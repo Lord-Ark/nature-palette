@@ -379,6 +379,125 @@ const loadSearchTermsController = (searchTermModel) => {
   process.exit(1);
 });
 
+(async () => {
+  const createCalls = [];
+  const renderedViews = [];
+  const editableTerm = {
+    Placeholder: 'Original placeholder',
+    Enabled: true,
+    save: async function () {
+      return this;
+    }
+  };
+  const existingTerms = [{ Name: 'color', Enabled: true }];
+  const controller = loadSearchTermsController({
+    find: async () => existingTerms,
+    findOne: async (query) => {
+      if (query._id === 'existing-id') {
+        return editableTerm;
+      }
+
+      if (query.Name === 'color') {
+        return { Name: 'color', Enabled: true };
+      }
+
+      return null;
+    },
+    create: (payload, callback) => {
+      createCalls.push(payload);
+      callback(null, payload);
+    }
+  });
+
+  const res = {
+    render: (view, locals) => {
+      renderedViews.push({ view, locals });
+    }
+  };
+
+  await controller.addSearchTerm(
+    {
+      body: { Name: '  color  ', Placeholder: '  duplicate  ', isEnabled: 'on' },
+      user: { id: 'user-2' }
+    },
+    res
+  );
+
+  await controller.addSearchTerm(
+    {
+      body: { Name: '  habitat  ', Placeholder: '  Habitat keyword  ' },
+      user: { id: 'user-2' }
+    },
+    res
+  );
+
+  await controller.editSearchTerm(
+    {
+      body: { Id: 'existing-id', Placeholder: '  Updated placeholder  ' },
+      user: { id: 'user-2' }
+    },
+    res
+  );
+
+  assert.deepStrictEqual(
+    createCalls,
+    [
+      {
+        Name: 'habitat',
+        Placeholder: 'Habitat keyword',
+        Enabled: false
+      }
+    ],
+    'new search terms should be created with trimmed values and explicit disabled state when the checkbox is unset'
+  );
+
+  assert.strictEqual(
+    editableTerm.Placeholder,
+    'Updated placeholder',
+    'editing a search term should trim placeholder whitespace before saving'
+  );
+
+  assert.strictEqual(
+    editableTerm.Enabled,
+    false,
+    'editing a search term should disable it when the checkbox is absent from the form body'
+  );
+
+  assert.deepStrictEqual(
+    renderedViews,
+    [
+      {
+        view: 'searchTerms',
+        locals: {
+          searchTerms: existingTerms,
+          error: 'Search Term Already Exists!',
+          user: { id: 'user-2' }
+        }
+      },
+      {
+        view: 'searchTerms',
+        locals: {
+          searchTerms: existingTerms,
+          error: null,
+          user: { id: 'user-2' }
+        }
+      },
+      {
+        view: 'searchTerms',
+        locals: {
+          searchTerms: existingTerms,
+          error: null,
+          user: { id: 'user-2' }
+        }
+      }
+    ],
+    'search-term add and edit flows should render expected results after input normalization'
+  );
+})().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
+
 const stubsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nature-palette-stubs-'));
 const expressStubDir = path.join(stubsDir, 'express');
 fs.mkdirSync(expressStubDir);

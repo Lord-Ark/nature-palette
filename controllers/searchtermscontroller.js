@@ -8,6 +8,14 @@ var mongoose = require('mongoose');
 
 var SearchTermModel = require('../models/SearchTermModel');
 
+function normalizeText(value) {
+  return typeof value === 'string' ? value.trim() : value;
+}
+
+function isEnabledValue(value) {
+  return value === 'on';
+}
+
 async function getEnabledSearchTerms() {
   let terms = await SearchTermModel.find({Enabled: true});
   return terms;
@@ -48,17 +56,12 @@ exports.editSearchTerm = function(req, res) {
       });
     }
     
-    if(typeof searchTerm != undefined && searchTerm != null){
-      searchTerm.Placeholder = req.body.Placeholder;  
-      
-      if(typeof req.body.isEnabled != undefined && req.body.isEnabled != null && req.body.isEnabled == "on"){
-        searchTerm.Enabled = true;  
-      }else{
-        searchTerm.Enabled = false
-      }
+    if (searchTerm != null) {
+      searchTerm.Placeholder = normalizeText(req.body.Placeholder);
+      searchTerm.Enabled = isEnabledValue(req.body.isEnabled);
 
-      searchTerm.save().then(function () {
-        getSearchTerms().then( function (searchTermList) {
+      return searchTerm.save().then(function () {
+        return getSearchTerms().then( function (searchTermList) {
           res.render('searchTerms', {searchTerms: searchTermList, error: null, user: req.user});    
         }) 
       });
@@ -88,8 +91,8 @@ exports.deleteSearchTerm = function(req, res) {
         //searchTerm.Enabled = false
       //}
 
-      searchTerm.remove().then(function () {
-        getSearchTerms().then( function (searchTermList) {
+      return searchTerm.remove().then(function () {
+        return getSearchTerms().then( function (searchTermList) {
           res.render('searchTerms', {searchTerms: searchTermList, error: null, user: req.user});    
         }) 
       });
@@ -98,8 +101,20 @@ exports.deleteSearchTerm = function(req, res) {
 
 // add search term
 exports.addSearchTerm = function(req, res) {
+  const normalizedName = normalizeText(req.body.Name);
+  const normalizedPlaceholder = normalizeText(req.body.Placeholder);
+
+  if (normalizedName == null || normalizedName === "") {
+    return getSearchTerms().then(function (searchTermList) {
+      res.render('searchTerms', {
+        searchTerms: searchTermList,
+        error: "Search Term Name Required!",
+        user: req.user
+      });
+    });
+  }
   
-  getSearchTermByName(req.body.Name).then(function (searchTerm) {
+  getSearchTermByName(normalizedName).then(function (searchTerm) {
     if(searchTerm!=null){
       getSearchTerms().then( function (searchTermList) {
         res.render('searchTerms', {searchTerms: searchTermList, error: "Search Term Already Exists!", user: req.user});    
@@ -108,14 +123,9 @@ exports.addSearchTerm = function(req, res) {
     }
 
     var newTerm = {};
-    newTerm.Name = req.body.Name;
-    newTerm.Placeholder = req.body.Placeholder;
-    
-    if(typeof req.body.isEnabled != undefined && req.body.isEnabled != null && req.body.isEnabled == "on"){
-      newTerm.Enabled = true;  
-    }else{
-      newTerm.Enabled = false
-    }
+    newTerm.Name = normalizedName;
+    newTerm.Placeholder = normalizedPlaceholder;
+    newTerm.Enabled = isEnabledValue(req.body.isEnabled);
     
     SearchTermModel.create(newTerm, function (err, term_instance) {
       if (err){
