@@ -3,6 +3,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const Module = require('module');
+const fileFactory = require('../lib/fileFactory');
 const isEligibleRequest = require('../lib/isEligibleRequest');
 const tempFileHandler = require('../lib/tempFileHandler');
 const { parseFileName, uriDecodeFileName } = require('../lib/utilities');
@@ -235,6 +236,53 @@ assert.strictEqual(
   'metadata.csv',
   'upload helper should strip client-supplied path segments from stored filenames'
 );
+
+(async () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nature-palette-file-mv-'));
+  const targetPath = path.join(tempDir, 'nested', 'sample.txt');
+  const upload = fileFactory(
+    {
+      buffer: Buffer.from('sample payload'),
+      name: 'sample.txt',
+      size: 14,
+      encoding: '7bit',
+      tempFilePath: '',
+      truncated: false,
+      mimetype: 'text/plain',
+      hash: 'sample-hash'
+    },
+    {
+      createParentPath: true,
+      debug: true
+    }
+  );
+  const originalLog = console.log;
+  const logs = [];
+  console.log = (message) => {
+    logs.push(message);
+  };
+
+  try {
+    await upload.mv(targetPath);
+
+    assert.strictEqual(
+      fs.readFileSync(targetPath, 'utf8'),
+      'sample payload',
+      'fileFactory should preserve uploaded buffer contents when moving files'
+    );
+  } finally {
+    console.log = originalLog;
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+
+  assert.ok(
+    logs.includes(`Moving uploaded buffer to ${targetPath}`),
+    'fileFactory should honor debug logging during mv operations'
+  );
+})().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
 
 const loadSearchSubmissionController = () => {
   const filename = path.join(repoDir, 'controllers', 'searchSubmissionController.js');
