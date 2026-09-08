@@ -47,30 +47,19 @@ exports.get_files = function(folder) {
 }
 
 //get all files recursively
-exports.getAllFiles = function(dirPath) {
-  var arrayOfFiles = [];
-  files = fs.readdirSync(dirPath);
+exports.getAllFiles = function getAllFiles(dirPath) {
+  const arrayOfFiles = [];
+  const files = fs.readdirSync(dirPath);
   files.forEach(function(file) {
-    if (fs.statSync(dirPath + "/" + file).isDirectory()) {
-      arrayFile = getsubFiles(dirPath + "/" + file);
-      arrayOfFiles.push(...arrayFile);
+    const filePath = path.join(dirPath, file);
+    if (fs.statSync(filePath).isDirectory()) {
+      arrayOfFiles.push(...getAllFiles(filePath));
     } else {
-      arrayOfFiles.push(path.join( dirPath, "/", file));
+      arrayOfFiles.push(filePath);
     }
   });
- 
-  return arrayOfFiles;
-}
 
-getsubFiles = function(folderPath)
-{
-  var arrayOfFilessub=[];
-  filessub = fs.readdirSync(folderPath);
-  filessub.forEach(function(file1) {
-      arrayOfFilessub.push(path.join(folderPath, "/", file1));
-  });
- 
-  return arrayOfFilessub;
+  return arrayOfFiles;
 }
 
 
