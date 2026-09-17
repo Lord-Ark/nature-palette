@@ -15,7 +15,7 @@ helperModule.require = (name) => {
   return originalRequire(name);
 };
 helperModule._compile(fs.readFileSync(filename, 'utf8'), filename);
-const { getAllFiles } = helperModule.exports;
+const { getAllFiles, get_files } = helperModule.exports;
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'nature-palette-traversal-'));
 try {
@@ -25,6 +25,12 @@ try {
   const expected = ['root.csv', 'nested/first.csv', 'nested/deeper/second.csv']
     .map((file) => path.join(root, file));
   expected.forEach((file) => fs.writeFileSync(file, 'sample'));
+
+  assert.deepStrictEqual(
+    get_files(root).sort(),
+    ['root.csv', 'nested', 'empty'].map((entry) => path.join(root, entry)).sort(),
+    'top-level entries should resolve correctly without a trailing slash'
+  );
 
   assert.deepStrictEqual(
     getAllFiles(root).sort(),

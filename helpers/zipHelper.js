@@ -40,7 +40,7 @@ exports.get_files = function(folder) {
   let filenames = [];
 
   fs.readdirSync(folder).forEach(file => {
-    filenames.push(path.resolve(path.normalize(folder+file)));
+    filenames.push(path.resolve(folder, file));
   });
 
   return filenames;
