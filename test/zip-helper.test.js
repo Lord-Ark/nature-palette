@@ -4,18 +4,27 @@ const os = require('os');
 const path = require('path');
 const Module = require('module');
 
+let uuidCounter = 0;
+let writtenArchivePath;
+
+function Archive() {}
+Archive.prototype.addLocalFile = () => {};
+Archive.prototype.writeZip = (archivePath) => {
+  writtenArchivePath = archivePath;
+};
+
 // Archive dependencies are not needed to exercise filesystem traversal.
 const filename = path.resolve(__dirname, '../helpers/zipHelper.js');
 const helperModule = new Module(filename, module);
 const originalRequire = helperModule.require.bind(helperModule);
 helperModule.require = (name) => {
   if (name === 'express') return () => ({});
-  if (name === 'uuid/v1') return () => 'test-uuid';
-  if (name === 'adm-zip' || name === 'node-zip') return function Archive() {};
+  if (name === 'uuid/v1') return () => `test-uuid-${++uuidCounter}`;
+  if (name === 'adm-zip' || name === 'node-zip') return Archive;
   return originalRequire(name);
 };
 helperModule._compile(fs.readFileSync(filename, 'utf8'), filename);
-const { getAllFiles, get_files } = helperModule.exports;
+const { getAllFiles, get_files, zip } = helperModule.exports;
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'nature-palette-traversal-'));
 try {
@@ -41,6 +50,27 @@ try {
     getAllFiles(path.join(root, 'empty')),
     [],
     'successive calls should not retain files from previous traversals'
+  );
+
+  const firstArchive = zip([], 'ResearchData');
+  assert.strictEqual(
+    firstArchive,
+    'downloads/ResearchData-test-uuid-1.zip',
+    'download archives should include a unique suffix'
+  );
+  assert.strictEqual(writtenArchivePath, firstArchive);
+
+  const secondArchive = zip([], 'ResearchData');
+  assert.notStrictEqual(
+    secondArchive,
+    firstArchive,
+    'concurrent downloads should not overwrite the same archive'
+  );
+
+  assert.strictEqual(
+    zip([]),
+    'downloads/ResearchData-test-uuid-3.zip',
+    'unnamed archives should use a stable fallback name and unique suffix'
   );
 } finally {
   fs.rmSync(root, { recursive: true, force: true });

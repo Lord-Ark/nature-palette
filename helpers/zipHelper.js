@@ -98,7 +98,8 @@ exports.zip = function(fileUrls,name){
   // var willSendthis = zip.toBuffer();
   // return willSendthis;
   // or write everything to disk
-  var zipFileUrl = 'downloads/'+name+ '.zip';
+  var archiveName = name || 'ResearchData';
+  var zipFileUrl = 'downloads/' + archiveName + '-' + rand + '.zip';
   zip.writeZip(zipFileUrl);
   return zipFileUrl;
 }
