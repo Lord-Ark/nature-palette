@@ -25,6 +25,19 @@ exports.getFileNamesInZip = function(fileUrl) {
 
 exports.unzip = function(fileUrl){
   var zip = new AdmZip(fileUrl);
+  var unsafeEntry = zip.getEntries().find(function(entry) {
+    var entryName = entry.entryName.replace(/\\/g, '/');
+    var normalizedName = path.posix.normalize(entryName);
+
+    return path.posix.isAbsolute(entryName) ||
+      /^[A-Za-z]:\//.test(entryName) ||
+      normalizedName === '..' ||
+      normalizedName.indexOf('../') === 0;
+  });
+  if (unsafeEntry) {
+    throw new Error('Archive contains an unsafe file path: ' + unsafeEntry.entryName);
+  }
+
   var rand = uuidv1();
   //console.log(rand);
   var folder = rawFilesLocation + path.basename(fileUrl) + '-' + rand + '/';

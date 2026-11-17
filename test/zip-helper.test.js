@@ -6,11 +6,18 @@ const Module = require('module');
 
 let uuidCounter = 0;
 let writtenArchivePath;
+let archiveEntries = [];
+let extractedArchivePath;
 
-function Archive() {}
+function Archive() {
+  this.getEntries = () => archiveEntries.map((entryName) => ({ entryName }));
+}
 Archive.prototype.addLocalFile = () => {};
 Archive.prototype.writeZip = (archivePath) => {
   writtenArchivePath = archivePath;
+};
+Archive.prototype.extractAllTo = (archivePath) => {
+  extractedArchivePath = archivePath;
 };
 
 // Archive dependencies are not needed to exercise filesystem traversal.
@@ -24,7 +31,7 @@ helperModule.require = (name) => {
   return originalRequire(name);
 };
 helperModule._compile(fs.readFileSync(filename, 'utf8'), filename);
-const { getAllFiles, get_files, zip } = helperModule.exports;
+const { getAllFiles, get_files, unzip, zip } = helperModule.exports;
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'nature-palette-traversal-'));
 try {
@@ -72,6 +79,25 @@ try {
     'downloads/ResearchData-test-uuid-3.zip',
     'unnamed archives should use a stable fallback name and unique suffix'
   );
+
+  archiveEntries = ['metadata/data.csv', 'images/specimen.jpg'];
+  const extractedPath = unzip('/tmp/safe.zip');
+  assert.strictEqual(extractedArchivePath, extractedPath);
+
+  for (const unsafeEntry of [
+    '../outside.txt',
+    'nested/../../outside.txt',
+    '..\\outside.txt',
+    '/tmp/outside.txt',
+    'C:\\temp\\outside.txt'
+  ]) {
+    archiveEntries = [unsafeEntry];
+    assert.throws(
+      () => unzip('/tmp/unsafe.zip'),
+      /Archive contains an unsafe file path/,
+      unsafeEntry
+    );
+  }
 } finally {
   fs.rmSync(root, { recursive: true, force: true });
 }
