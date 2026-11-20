@@ -80,6 +80,18 @@ try {
     'unnamed archives should use a stable fallback name and unique suffix'
   );
 
+  assert.strictEqual(
+    zip([], '../outside'),
+    'downloads/outside-test-uuid-4.zip',
+    'archive names should not escape the downloads directory'
+  );
+
+  assert.strictEqual(
+    zip([], '..\\outside'),
+    'downloads/outside-test-uuid-5.zip',
+    'Windows archive paths should not escape the downloads directory'
+  );
+
   archiveEntries = ['metadata/data.csv', 'images/specimen.jpg'];
   const extractedPath = unzip('/tmp/safe.zip');
   assert.strictEqual(extractedArchivePath, extractedPath);

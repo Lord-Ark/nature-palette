@@ -13,6 +13,14 @@ var zip = new require('node-zip')();
 
 const rawFilesLocation = path.dirname(__dirname) + '/uploads/raw/';
 
+function getArchiveName(name) {
+  if (typeof name !== 'string') {
+    return 'ResearchData';
+  }
+
+  return path.posix.basename(name.replace(/\\/g, '/')) || 'ResearchData';
+}
+
 exports.getFileNamesInZip = function(fileUrl) {
   var zip = new AdmZip(fileUrl);
   
@@ -111,7 +119,7 @@ exports.zip = function(fileUrls,name){
   // var willSendthis = zip.toBuffer();
   // return willSendthis;
   // or write everything to disk
-  var archiveName = name || 'ResearchData';
+  var archiveName = getArchiveName(name);
   var zipFileUrl = 'downloads/' + archiveName + '-' + rand + '.zip';
   zip.writeZip(zipFileUrl);
   return zipFileUrl;
