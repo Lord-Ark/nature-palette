@@ -73,9 +73,13 @@ exports.getAllFiles = function getAllFiles(dirPath) {
   const files = fs.readdirSync(dirPath);
   files.forEach(function(file) {
     const filePath = path.join(dirPath, file);
-    if (fs.statSync(filePath).isDirectory()) {
+    const stats = fs.lstatSync(filePath);
+    if (stats.isSymbolicLink()) {
+      return;
+    }
+    if (stats.isDirectory()) {
       arrayOfFiles.push(...getAllFiles(filePath));
-    } else {
+    } else if (stats.isFile()) {
       arrayOfFiles.push(filePath);
     }
   });

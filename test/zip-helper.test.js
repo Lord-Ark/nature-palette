@@ -41,23 +41,29 @@ try {
   const expected = ['root.csv', 'nested/first.csv', 'nested/deeper/second.csv']
     .map((file) => path.join(root, file));
   expected.forEach((file) => fs.writeFileSync(file, 'sample'));
-
   assert.deepStrictEqual(
     get_files(root).sort(),
     ['root.csv', 'nested', 'empty'].map((entry) => path.join(root, entry)).sort(),
     'top-level entries should resolve correctly without a trailing slash'
   );
 
+  const outsideRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'nature-palette-outside-'));
+  const outsideFile = path.join(outsideRoot, 'outside.csv');
+  fs.writeFileSync(outsideFile, 'private');
+  fs.symlinkSync(outsideFile, path.join(root, 'linked-file.csv'));
+  fs.symlinkSync(outsideRoot, path.join(root, 'linked-folder'));
+
   assert.deepStrictEqual(
     getAllFiles(root).sort(),
     expected.sort(),
-    'all nested files should be returned without directory entries'
+    'nested files should be returned without directories or symbolic links'
   );
   assert.deepStrictEqual(
     getAllFiles(path.join(root, 'empty')),
     [],
     'successive calls should not retain files from previous traversals'
   );
+  fs.rmSync(outsideRoot, { recursive: true, force: true });
 
   const firstArchive = zip([], 'ResearchData');
   assert.strictEqual(
