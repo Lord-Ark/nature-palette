@@ -15,6 +15,25 @@ assert.deepStrictEqual(processNested({ 'toString[title]': 'Safe' }), {
 });
 assert.strictEqual(Object.prototype.toString.title, undefined);
 
+assert.deepStrictEqual(processNested({
+  'files[0][name]': 'first.csv',
+  'files[10000][name]': 'last.csv'
+}), {
+  files: Object.assign([], {
+    0: { name: 'first.csv' },
+    10000: { name: 'last.csv' }
+  })
+});
+
+assert.deepStrictEqual(processNested({
+  'files[999999999][name]': 'unsafe.csv',
+  '999999999': 'valid top-level field',
+  title: 'Safe'
+}), {
+  '999999999': 'valid top-level field',
+  title: 'Safe'
+});
+
 for (const field of [
   '__proto__.nestedUploadPolluted',
   'constructor[prototype][nestedUploadPolluted]',
